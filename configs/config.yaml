@@ -1,0 +1,41 @@
+project: locpb/Common_Lit_Evaluate_Student_Summaries
+name: experiment-tracking-Common_Lit_Evaluate_Student_Summaries
+wandb:
+  WANDB_API_KEY: YOUR_WANDB_API
+  entity: YOUR_WANDB_API
+  project: Common_Lit_Evaluate_Student_Summaries
+  name: Common_Lit_Evaluate_Student_Summaries
+  group: Common_Lit_Evaluate_Student_Summaries_Training
+  job_type: Train_Supervised
+parameters:
+  root_data_dir: "./data"
+  transformers:
+    max_seq_length: 512
+    add_prompt_question: False
+    add_prompt_text: False
+    fold: 0
+    num_proc: 4
+    dropout: 0.1
+  train_catboost:
+    debug: False
+    wandb: False
+    root_data_dir: "./icr-identify-age-related-conditions"
+    checkpoint_save_dir: "./"
+    output_data_dir: "./"
+    n_folds: 5
+    params:
+      iterations: 10000
+      verbose: 1000
+      learning_rate: 0.005
+      early_stopping_rounds: 1000
+      auto_class_weights: "Balanced"
+      loss_function: "MultiClass"
+      eval_metric: "MultiClass:use_weights=False"
+      random_seed: 42
+      use_best_model: True
+      l2_leaf_reg: 1
+      max_ctr_complexity: 15
+      max_depth: 10
+      grow_policy: Lossguide
+      max_leaves: 64
+      min_data_in_leaf: 40

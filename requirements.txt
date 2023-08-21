@@ -1,0 +1,10 @@
+hydra-core
+omegaconf
+wandb
+torch
+transformers
+datasets
+numpy
+tqdm
+pandas
+transformers[torch]
