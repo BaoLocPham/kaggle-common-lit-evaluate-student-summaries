@@ -41,14 +41,20 @@ def main():
         import wandb
 
         try:
-            from kaggle_secrets import UserSecretsClient
-            user_secrets = UserSecretsClient()
-            key = user_secrets.get_secret("wandb")
+            if os.path.exists("/kaggle/working"):
+                from kaggle_secrets import UserSecretsClient
+                user_secrets = UserSecretsClient()
+                key = user_secrets.get_secret("wandb")
 
-            wandb.login(key=key)
+                wandb.login(key=key)
+            else:
+                wandb.login(key=os.environ['WANDB'])
         except:
             print("Could not log in to WandB")
+    from lightning.pytorch.loggers import WandbLogger
 
+    wandb_logger = WandbLogger(project=config.project_name, 
+                               name=config.run_name if config.run_name else None)
     tokenizer = AutoTokenizer.from_pretrained(config.model_name_or_path)
 
     model_config = AutoConfig.from_pretrained(config.model_name_or_path)
@@ -109,6 +115,7 @@ def main():
         data_collator=data_collator,
         tokenizer=tokenizer,
         compute_metrics=compute_mcrmse,
+        logger=wandb_logger,
     )
 
     trainer.train()
@@ -123,6 +130,7 @@ def main():
 
     trainer.log({"eval_best_mcrmse": trainer.state.best_metric})
 
-
+    wandb.finish()
+    
 if __name__ == "__main__":
     main()

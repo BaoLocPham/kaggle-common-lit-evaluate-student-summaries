@@ -54,6 +54,17 @@ class Config:
         metadata={"help": "Amount of dropout to apply"},
     )
 
+
+    project: Optional[str] = field(
+        default=None,
+        metadata={"help": "Wandb project"},
+    )
+
+    run_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Wandb run name"},
+    )
+
 @dataclass
 class Eval_Config:
 
