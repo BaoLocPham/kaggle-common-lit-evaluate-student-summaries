@@ -4,7 +4,7 @@ import warnings
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
-import torch
+
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -15,13 +15,12 @@ from transformers import (
     HfArgumentParser,
     DataCollatorWithPadding,
 )
-from datasets import Dataset, load_dataset, disable_progress_bar
+from datasets import Dataset, disable_progress_bar
 import pandas as pd
 import numpy as np
-from configs.config_class import Eval_Config
-
+from configs.config_class import Config
 from metrics.rcrmse import compute_mcrmse
-from nlp import eval_tokenize
+from nlp import tokenize
 
 warnings.simplefilter("ignore")
 logging.disable(logging.ERROR)
@@ -30,128 +29,101 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 disable_progress_bar()
 
+
 def main():
-    parser = HfArgumentParser((Eval_Config, TrainingArguments))
+    parser = HfArgumentParser((Config, TrainingArguments))
 
     config, training_args = parser.parse_args_into_dataclasses()
 
-    tokenizer = AutoTokenizer.from_pretrained(config.model_name_or_path.format(fold=config.folds[0]))
-    
-    if training_args.do_eval and training_args.do_predict:
-        raise ValueError("Choose one of `do_eval` and `do_predict`. Not both.")
-    
+    set_seed(training_args.seed)
 
-    if training_args.do_predict:
-        pdf_file = f"{config.data_dir}/prompts_test.csv"
-        sdf_file = f"{config.data_dir}/summaries_test.csv"
-    elif training_args.do_eval:
-        pdf_file = f"{config.data_dir}/prompts_train.csv"
-        sdf_file = f"{config.data_dir}/summaries_train.csv"
-    else:
-        raise ValueError("Choose `do_eval` to run validation on OOF and `do_predict` to get predictions on test set")
-    
+    if "wandb" in training_args.report_to:
+        import wandb
 
-    pdf = pd.read_csv(pdf_file)
-    sdf = pd.read_csv(sdf_file)
+        try:
+            if os.path.exists("/kaggle/working"):
+                from kaggle_secrets import UserSecretsClient
+                user_secrets = UserSecretsClient()
+                key = user_secrets.get_secret("wandb")
+
+                wandb.login(key=key)
+            else:
+                wandb.login(key=os.environ['WANDB'])
+        except:
+            print("Could not log in to WandB")
+    tokenizer = AutoTokenizer.from_pretrained(config.model_name_or_path)
+
+    model_config = AutoConfig.from_pretrained(config.model_name_or_path)
+    model_config.update({
+        "hidden_dropout_prob": config.dropout,
+        "attention_probs_dropout_prob": config.dropout,
+        "num_labels": 2,
+        "problem_type": "regression",
+        "cfg": config.__dict__,
+    })
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        config.model_name_or_path, config=model_config, ignore_mismatched_sizes=True
+    )
+
+    pdf = pd.read_csv(f"{config.data_dir}/prompts_train.csv")
+    sdf = pd.read_csv(f"{config.data_dir}/summaries_train.csv")
 
     df = pdf.merge(sdf, on="prompt_id")
+
+    # 4 prompt ids, 4 folds
+    id2fold = {
+        "814d6b": 0,
+        "39c16e": 1,
+        "3b9047": 2,
+        "ebad26": 3,
+    }
+
+    df["fold"] = df["prompt_id"].map(id2fold)
+
+    train_ds = Dataset.from_pandas(df[df["fold"] != config.fold])
+    val_ds = Dataset.from_pandas(df[df["fold"] == config.fold])
+
+    train_ds = train_ds.map(
+        tokenize,
+        batched=False,
+        num_proc=config.num_proc,
+        fn_kwargs={"tokenizer": tokenizer, "config": config},
+    )
+
+    val_ds = val_ds.map(
+        tokenize,
+        batched=False,
+        num_proc=config.num_proc,
+        fn_kwargs={"tokenizer": tokenizer, "config": config},
+    )
+
+    data_collator = DataCollatorWithPadding(
+        tokenizer=tokenizer,
+        pad_to_multiple_of=16 if training_args.fp16 else None,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_ds,
+        eval_dataset=val_ds,
+        data_collator=data_collator,
+        tokenizer=tokenizer,
+        compute_metrics=compute_mcrmse,
+    )
+
+    trainer.train()
+
+    model.config.best_metric = trainer.state.best_metric
+    model.config.save_pretrained(training_args.output_dir)
+
+    # need to load best model before doing predictions
+#     preds = trainer.predict(val_ds).predictions
+
+#     np.save(Path(training_args.output_dir)/f"preds_fold{config.fold}.npy", preds)
+
+    trainer.log({"eval_best_mcrmse": trainer.state.best_metric})
     
-    ds = Dataset.from_pandas(df)
-
-    
-    tokenized_ds_path = Path(config.tokenized_ds_path) / "tokenized.pq"
-    
-    disable_progress_bar()
-    # Only need to tokenize once
-    if tokenized_ds_path.exists():
-        ds = load_dataset("parquet", data_files=str(tokenized_ds_path), split="train")
-    else:
-
-        ds = ds.map(
-            eval_tokenize,
-            batched=False,
-            num_proc=config.num_proc,
-            fn_kwargs={"tokenizer": tokenizer, "config": config},
-        )
-
-        # sort by length to reduce padding, speed it up
-        ds = ds.sort("length")
-
-        cols2keep = ["student_id", "prompt_id"]
-
-        if not tokenized_ds_path.exists():
-            tds_dir = Path(config.tokenized_ds_path)
-            tds_dir.mkdir(parents=True, exist_ok=True)
-            
-            ds.to_parquet(str(tds_dir / "tokenized.pq"))
-
-            temp = ds.remove_columns([x for x in ds.column_names if x not in cols2keep])
-            temp.to_json(str(tds_dir / "ids.json"))
-            
-    
-    if training_args.do_eval:
-        id2fold = {
-            "814d6b": 0,
-            "39c16e": 1,
-            "3b9047": 2,
-            "ebad26": 3,
-        }
-
-        full_ds = ds.map(lambda x: {"fold": id2fold[x["prompt_id"]]})
-        folds = [
-            [i for i, f in enumerate(full_ds["fold"]) if f==fold]
-            for fold in range(4)
-        ]
-
-    base_output =  training_args.output_dir
-
-    for fold in config.folds.split(";"):
-        
-        if training_args.do_eval:
-            ds = full_ds.select(folds[int(fold)])
-        
-        model_path = config.model_name_or_path.format(fold=fold)
-        
-        training_args.output_dir = base_output.format(fold=fold)
-        if training_args.output_dir.startswith("/kaggle/input/"):
-            training_args.output_dir = training_args.output_dir[len("/kaggle/input/"):]
-        if training_args.output_dir.startswith("/kaggle/working"):
-            training_args.output_dir = training_args.output_dir[len("/kaggle/working"):]
-        
-        training_args.output_dir = training_args.output_dir.replace("/", "_")
-        
-        if training_args.process_index == 0:
-            print(f"Running {model_path}")
-        
-        
-        model_config = AutoConfig.from_pretrained(model_path)
-        # This is slightly faster than doing `from_pretrained`
-        model = AutoModelForSequenceClassification.from_config(model_config)
-        model.load_state_dict(torch.load(model_path+"/pytorch_model.bin"))
-        
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            tokenizer=tokenizer,
-            compute_metrics=compute_mcrmse,
-        )
-
-        if training_args.do_predict:
-            predictions = trainer.predict(ds).predictions
-            
-            os.makedirs(training_args.output_dir, exist_ok=True)
-            np.save(os.path.join(training_args.output_dir, f"predictions.npy"), predictions)
-
-        else:
-            predictions = trainer.predict(ds)
-            metrics = predictions.metrics
-            trainer.save_metrics("eval", metrics)
-            if training_args.process_index == 0:
-                print(metrics)
-                print(f"best mcrmse during training: {model.config.best_metric}")
-                
-            np.save(os.path.join(training_args.output_dir, f"predictions.npy"), predictions.predictions)
-
 if __name__ == "__main__":
-
     main()

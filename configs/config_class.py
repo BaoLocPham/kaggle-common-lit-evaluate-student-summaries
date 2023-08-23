@@ -55,16 +55,6 @@ class Config:
     )
 
 
-    wandb_project: Optional[str] = field(
-        default=None,
-        metadata={"help": "Wandb project"},
-    )
-
-    wandb_run_name: Optional[str] = field(
-        default=None,
-        metadata={"help": "Wandb run name"},
-    )
-
 @dataclass
 class Eval_Config:
 
