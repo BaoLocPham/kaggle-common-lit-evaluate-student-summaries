@@ -51,10 +51,7 @@ def main():
                 wandb.login(key=os.environ['WANDB'])
         except:
             print("Could not log in to WandB")
-    from lightning.pytorch.loggers import WandbLogger
 
-    wandb_logger = WandbLogger(project=config.project_name, 
-                               name=config.run_name if config.run_name else None)
     tokenizer = AutoTokenizer.from_pretrained(config.model_name_or_path)
 
     model_config = AutoConfig.from_pretrained(config.model_name_or_path)
@@ -115,7 +112,6 @@ def main():
         data_collator=data_collator,
         tokenizer=tokenizer,
         compute_metrics=compute_mcrmse,
-        logger=wandb_logger,
     )
 
     trainer.train()
