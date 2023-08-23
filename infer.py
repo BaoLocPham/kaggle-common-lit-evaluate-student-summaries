@@ -18,7 +18,7 @@ from transformers import (
 from datasets import Dataset, disable_progress_bar
 import pandas as pd
 import numpy as np
-from configs.config_class import Config
+from configs.config_class import Eval_Config
 from metrics.rcrmse import compute_mcrmse
 from nlp import tokenize
 
@@ -31,7 +31,7 @@ disable_progress_bar()
 
 
 def main():
-    parser = HfArgumentParser((Config, TrainingArguments))
+    parser = HfArgumentParser((Eval_Config, TrainingArguments))
 
     config, training_args = parser.parse_args_into_dataclasses()
 
