@@ -55,12 +55,12 @@ class Config:
     )
 
 
-    project: Optional[str] = field(
+    wandb_project: Optional[str] = field(
         default=None,
         metadata={"help": "Wandb project"},
     )
 
-    run_name: Optional[str] = field(
+    wandb_run_name: Optional[str] = field(
         default=None,
         metadata={"help": "Wandb run name"},
     )
