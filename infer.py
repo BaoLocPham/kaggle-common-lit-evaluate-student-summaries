@@ -30,16 +30,18 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 disable_progress_bar()
 
+
 def main():
     parser = HfArgumentParser((Eval_Config, TrainingArguments))
 
     config, training_args = parser.parse_args_into_dataclasses()
 
-    tokenizer = AutoTokenizer.from_pretrained(config.model_name_or_path.format(fold=config.folds[0]))
+    tokenizer = AutoTokenizer.from_pretrained(
+        config.model_name_or_path.format(
+            fold=config.folds[0]))
 
     if training_args.do_eval and training_args.do_predict:
         raise ValueError("Choose one of `do_eval` and `do_predict`. Not both.")
-
 
     if training_args.do_predict:
         pdf_file = f"{config.data_dir}/prompts_test.csv"
@@ -48,8 +50,8 @@ def main():
         pdf_file = f"{config.data_dir}/prompts_train.csv"
         sdf_file = f"{config.data_dir}/summaries_train.csv"
     else:
-        raise ValueError("Choose `do_eval` to run validation on OOF and `do_predict` to get predictions on test set")
-
+        raise ValueError(
+            "Choose `do_eval` to run validation on OOF and `do_predict` to get predictions on test set")
 
     pdf = pd.read_csv(pdf_file)
     sdf = pd.read_csv(sdf_file)
@@ -58,13 +60,15 @@ def main():
 
     ds = Dataset.from_pandas(df)
 
-
     tokenized_ds_path = Path(config.tokenized_ds_path) / "tokenized.pq"
 
     disable_progress_bar()
     # Only need to tokenize once
     if tokenized_ds_path.exists():
-        ds = load_dataset("parquet", data_files=str(tokenized_ds_path), split="train")
+        ds = load_dataset(
+            "parquet",
+            data_files=str(tokenized_ds_path),
+            split="train")
     else:
 
         ds = ds.map(
@@ -85,9 +89,9 @@ def main():
 
             ds.to_parquet(str(tds_dir / "tokenized.pq"))
 
-            temp = ds.remove_columns([x for x in ds.column_names if x not in cols2keep])
+            temp = ds.remove_columns(
+                [x for x in ds.column_names if x not in cols2keep])
             temp.to_json(str(tds_dir / "ids.json"))
-
 
     if training_args.do_eval:
         id2fold = {
@@ -99,11 +103,11 @@ def main():
 
         full_ds = ds.map(lambda x: {"fold": id2fold[x["prompt_id"]]})
         folds = [
-            [i for i, f in enumerate(full_ds["fold"]) if f==fold]
+            [i for i, f in enumerate(full_ds["fold"]) if f == fold]
             for fold in range(4)
         ]
 
-    base_output =  str(training_args.output_dir)
+    base_output = str(training_args.output_dir)
 
     for fold in config.folds.split(";"):
 
@@ -112,22 +116,36 @@ def main():
         print("FOLD", fold)
         model_path = config.model_name_or_path.format(fold=fold)
 
-        output_dir = base_output.format(fold=fold)
-        if output_dir.startswith("/kaggle/input/"):
-            output_dir = output_dir[len("/kaggle/input/"):]
-        if output_dir.startswith("/kaggle/working"):
-            output_dir = output_dir[len("/kaggle/working"):]
-
+        training_args_dict = vars(training_args)
+        training_args_dict['output_dir'] = base_output.format(fold=fold)
+        key_to_del = [
+            '__cached__setup_devices',
+            '_frozen',
+            '_n_gpu',
+            'deepspeed_plugin',
+            'distributed_state']
+        for key in key_to_del:
+            if key in training_args_dict:
+                del training_args_dict[key]
+        HFParser = HfArgumentParser(TrainingArguments)
+        training_args = HFParser.parse_dict(training_args_dict)[0]
+        if training_args.output_dir.startswith("/kaggle/input/"):
+            output_dir = training_args.output_dir[len("/kaggle/input/"):]
+        if training_args.output_dir.startswith("/kaggle/working"):
+            output_dir = training_args.output_dir[len("/kaggle/working"):]
+        if training_args.output_dir.startswith(
+                "/content/kaggle-common-lit-evaluate-student-summaries/"):
+            output_dir = training_args.output_dir[len(
+                "/content/kaggle-common-lit-evaluate-student-summaries/"):]
         output_dir = output_dir.replace("/", "_")
 
         if training_args.process_index == 0:
             print(f"Running {model_path}")
 
-
         model_config = AutoConfig.from_pretrained(model_path)
         # This is slightly faster than doing `from_pretrained`
         model = AutoModelForSequenceClassification.from_config(model_config)
-        model.load_state_dict(torch.load(model_path+"/pytorch_model.bin"))
+        model.load_state_dict(torch.load(model_path + "/pytorch_model.bin"))
 
         trainer = Trainer(
             model=model,
@@ -139,7 +157,6 @@ def main():
         if training_args.do_predict:
             predictions = trainer.predict(ds).predictions
 
-            
             np.save(os.path.join(output_dir, f"predictions.npy"), predictions)
 
         else:
@@ -148,10 +165,15 @@ def main():
             trainer.save_metrics("eval", metrics)
             if training_args.process_index == 0:
                 print(metrics)
-                print(f"best mcrmse during training: {model.config.best_metric}")
+                print(
+                    f"best mcrmse during training: {model.config.best_metric}")
 
-            np.save(os.path.join(output_dir, f"predictions.npy"), predictions.predictions)
+            np.save(
+                os.path.join(
+                    output_dir,
+                    f"predictions.npy"),
+                predictions.predictions)
+
 
 if __name__ == "__main__":
-
     main()
