@@ -3,8 +3,8 @@
 # model name, batch size, max seq len
 model_configs=(
     "roberta-base 10 32"
-#     "google/electra-base-discriminator 10 32"
-#     "microsoft/deberta-base-mnli 6 32"
+    "google/electra-base-discriminator 10 32"
+    "microsoft/deberta-base-mnli 6 32"
 )
 
 for model_config in "${model_configs[@]}"; do

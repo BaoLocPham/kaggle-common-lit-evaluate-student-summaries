@@ -8,8 +8,8 @@ preds = {}
 # model name, batch size, max seq len
 model_configs = [
     ('roberta-base', 10, 32),
-#     ('google/electra-base-discriminator', 10, 512),
-#     ('microsoft/deberta-base-mnli', 6, 512),
+    ('google/electra-base-discriminator', 10, 32),
+    ('microsoft/deberta-base-mnli', 6, 32),
 ]
 
 for model, _, _ in model_configs:
