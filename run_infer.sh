@@ -2,9 +2,9 @@
 
 # Define model configurations
 declare -a model_configs=(
-    "./roberta-base_fold{fold} roberta 32 48 true"
-    "./electra-base-discriminator_fold{fold} electra 32 48 true"
-    "./deberta-base-mnli_fold{fold} deb-v1 32 32 true"
+    "/kaggle/working/roberta-base_fold{fold} roberta 32 48 true"
+    "/kaggle/working/electra-base-discriminator_fold{fold} electra 32 48 true"
+    "/kaggle/working/deberta-base-mnli_fold{fold} deb-v1 32 32 true"
 )
 
 do_eval=true
@@ -25,8 +25,8 @@ for model_config in "${model_configs[@]}"; do
 
     torchrun --nproc_per_node 2 infer.py \
       --model_name_or_path $model_path \
-      --folds "0;1;2;3" \
-      --data_dir "/kaggle/input/commonlit-evaluate-student-summaries" \
+      --folds "0" \
+      --data_dir "./data" \
       --output_dir  $output_dir \
       --dataloader_num_workers 2 \
       --per_device_eval_batch_size $batch_size \

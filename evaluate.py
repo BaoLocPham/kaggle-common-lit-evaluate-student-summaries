@@ -7,16 +7,16 @@ preds = {}
 
 # model name, batch size, max seq len
 model_configs = [
-    ('roberta-base', 10, 512),
-    ('google/electra-base-discriminator', 10, 512),
-    ('microsoft/deberta-base-mnli', 6, 512),
+    ('roberta-base', 10, 32),
+    ('google/electra-base-discriminator', 10, 32),
+    ('microsoft/deberta-base-mnli', 6, 32),
 ]
 
 for model, _, _ in model_configs:
     scores[model] = []
-    for fold in range(4):
+    for fold in range(1):
 
-        output = f"{model.split('/')[-1]}_fold{fold}"
+        output = f"/kaggle/working/{model.split('/')[-1]}_fold{fold}"
         p = Path(output) / "config.json"
 
         with open(p) as fp:
