@@ -64,7 +64,7 @@ def main():
 
     disable_progress_bar()
     # Only need to tokenize once
-    if tokenized_ds_path.exists():
+    if not config.overwrite_tokenized_ds and tokenized_ds_path.exists():
         ds = load_dataset(
             "parquet",
             data_files=str(tokenized_ds_path),
@@ -83,7 +83,7 @@ def main():
 
         cols2keep = ["student_id", "prompt_id"]
 
-        if not tokenized_ds_path.exists():
+        if config.overwrite_tokenized_ds or not tokenized_ds_path.exists():
             tds_dir = Path(config.tokenized_ds_path)
             tds_dir.mkdir(parents=True, exist_ok=True)
 
