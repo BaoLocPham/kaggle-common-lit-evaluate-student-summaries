@@ -64,7 +64,7 @@ def main():
 
     disable_progress_bar()
     # Only need to tokenize once
-    if tokenized_ds_path.exists():
+    if not config.overwrite_tokenized_ds and tokenized_ds_path.exists():
         ds = load_dataset(
             "parquet",
             data_files=str(tokenized_ds_path),
@@ -83,7 +83,7 @@ def main():
 
         cols2keep = ["student_id", "prompt_id"]
 
-        if not tokenized_ds_path.exists():
+        if config.overwrite_tokenized_ds or not tokenized_ds_path.exists():
             tds_dir = Path(config.tokenized_ds_path)
             tds_dir.mkdir(parents=True, exist_ok=True)
 
@@ -129,16 +129,20 @@ def main():
                 del training_args_dict[key]
         HFParser = HfArgumentParser(TrainingArguments)
         training_args = HFParser.parse_dict(training_args_dict)[0]
-        if training_args.output_dir.startswith("/kaggle/input/"):
-            output_dir = training_args.output_dir[len("/kaggle/input/"):]
-        if training_args.output_dir.startswith("/kaggle/working"):
-            output_dir = training_args.output_dir[len("/kaggle/working"):]
-        if training_args.output_dir.startswith(
-                "/content/kaggle-common-lit-evaluate-student-summaries/"):
-            output_dir = training_args.output_dir[len(
-                "/content/kaggle-common-lit-evaluate-student-summaries/"):]
-        output_dir = output_dir.replace("/", "_")
-
+#         if training_args.output_dir.startswith("/kaggle/input/"):
+#             output_dir = training_args.output_dir[len("/kaggle/input/"):]
+#         if training_args.output_dir.startswith("/kaggle/working"):
+#             output_dir = training_args.output_dir[len("/kaggle/working"):]
+#         if training_args.output_dir.startswith(
+#                 "/content/train_output/"):
+#             output_dir = training_args.output_dir[len(
+#                 "/content/train_output/"):]
+#         print(f"training_args.output_dir: {training_args.output_dir}")
+#         print(f"output_dir: {output_dir}")
+#         output_dir = output_dir.replace("/", "_")
+#         output_dir = ("/kaggle/working/" if os.path.exists("/kaggle/working/") else "/content/") + output_dir
+        output_dir = training_args.output_dir.replace("/", "_")
+        
         if training_args.process_index == 0:
             print(f"Running {model_path}")
 
@@ -156,7 +160,8 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         if training_args.do_predict:
             predictions = trainer.predict(ds).predictions
-
+            print(f"do predict, len predicts:{len(predictions)}")
+            print(f"saving to {output_dir}/predictions.npy")
             np.save(os.path.join(output_dir, f"predictions.npy"), predictions)
 
         else:
@@ -173,7 +178,6 @@ def main():
                     output_dir,
                     f"predictions.npy"),
                 predictions.predictions)
-
 
 if __name__ == "__main__":
     main()

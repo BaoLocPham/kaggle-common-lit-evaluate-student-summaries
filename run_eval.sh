@@ -2,18 +2,12 @@
 
 # Define model configurations
 declare -a model_configs=(
-    "./roberta-base_fold{fold} roberta 32 48 true"
+    "/kaggle/working/roberta-base_fold{fold} roberta 32 48 true"
 )
 
-# Define content weights
-content_weights=(-0.37219577176757734 0.371827429109788 0.3961259132484331 0.5788802331446047)
-
-# Define wording weights
-wording_weights=(0.20531595039623537 -0.06448332513626791 -0.13609857218037674 0.9887177962204701)
-
-# Set evaluation and prediction flags
-do_eval=false
+do_eval=true
 do_predict=true
+
 suffix="_eval"
 
 for model_config in "${model_configs[@]}"; do

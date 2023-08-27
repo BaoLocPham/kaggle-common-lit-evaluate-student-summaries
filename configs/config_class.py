@@ -97,3 +97,8 @@ class Eval_Config:
         default="tokenized_ds",
         metadata={"help": "Tokenized dataset path"},
     )
+    
+    overwrite_tokenized_ds: Optional[bool] = field(	
+        default=False,	
+        metadata={"help": "Overwrite existing tokenized datasets"},	
+    )
