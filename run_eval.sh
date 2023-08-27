@@ -3,8 +3,6 @@
 # Define model configurations
 declare -a model_configs=(
     "/kaggle/working/roberta-base_fold{fold} roberta 32 48 true"
-    "/kaggle/working/electra-base-discriminator_fold{fold} electra 32 48 true"
-    "/kaggle/working/deberta-base-mnli_fold{fold} deb-v1 32 32 true"
 )
 
 do_eval=true

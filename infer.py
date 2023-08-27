@@ -156,6 +156,7 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         if training_args.do_predict:
             predictions = trainer.predict(ds).predictions
+            print(f"do predict, len predicts:{len(predictions)}")
 
             np.save(os.path.join(output_dir, f"predictions.npy"), predictions)
 
