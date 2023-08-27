@@ -131,8 +131,8 @@ def main():
         training_args = HFParser.parse_dict(training_args_dict)[0]
         if training_args.output_dir.startswith("/kaggle/input/"):
             output_dir = training_args.output_dir[len("/kaggle/input/"):]
-        if training_args.output_dir.startswith("/kaggle/working"):
-            output_dir = training_args.output_dir[len("/kaggle/working"):]
+        if training_args.output_dir.startswith("/kaggle/working/"):
+            output_dir = training_args.output_dir[len("/kaggle/working/"):]
         if training_args.output_dir.startswith(
                 "/content/kaggle-common-lit-evaluate-student-summaries/"):
             output_dir = training_args.output_dir[len(
