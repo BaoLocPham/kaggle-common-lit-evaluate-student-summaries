@@ -39,6 +39,11 @@ class Config:
         metadata={"help": "Add prompt text into input"},
     )
 
+    add_prompt_title: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Add prompt title into input"},
+    )
+
     fold: Optional[int] = field(
         default=0,
         metadata={"help": "Fold"},
