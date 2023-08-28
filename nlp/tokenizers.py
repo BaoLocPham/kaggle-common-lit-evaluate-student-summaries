@@ -10,6 +10,8 @@ def tokenize(example, tokenizer, config):
         cols.append("prompt_question")
     elif config.add_prompt_text:
         cols.append("prompt_text")
+    elif config.add_prompt_title:
+        cols.append("prompt_title")
     cols.append("text")
 
     labels = [example["content"], example["wording"]]

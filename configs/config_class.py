@@ -83,6 +83,11 @@ class Eval_Config:
         metadata={"help": "Add prompt text into input"},
     )
 
+    add_prompt_title: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Add prompt title into input"},
+    )
+
     folds: Optional[str] = field(
         default="0",
         metadata={"help": "Fold"},
