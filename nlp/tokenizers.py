@@ -33,9 +33,11 @@ def eval_tokenize(example, tokenizer, config):
 
     cols = []
 
-    if config.add_prompt_question:
+    if config.add_prompt_title:
+        cols.append("prompt_title")
+    elif config.add_prompt_question:
         cols.append("prompt_question")
-    if config.add_prompt_text:
+    elif config.add_prompt_text:
         cols.append("prompt_text")
         
     cols.append("text")
