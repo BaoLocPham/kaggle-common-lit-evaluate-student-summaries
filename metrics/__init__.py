@@ -1,1 +1,1 @@
-from .rcrmse import compute_mcrmse
+from .rcrmse import compute_mcrmse, score_loss

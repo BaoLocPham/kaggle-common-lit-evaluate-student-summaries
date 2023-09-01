@@ -8,3 +8,7 @@ numpy
 tqdm
 pandas
 transformers[torch]
+sentencepiece
+scikit-learn
+matplotlib
+seaborn
