@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 def compute_mcrmse(eval_pred):
     """
@@ -22,7 +23,7 @@ def MCRMSE(y_trues, y_preds):
     for i in range(idxes):
         y_true = y_trues[:,i]#.detach().to('cpu').numpy()
         y_pred = y_preds[:,i]#.detach().to('cpu').numpy()
-        score = np.mean_squared_error(y_true, y_pred, squared=False) # RMSE
+        score = mean_squared_error(y_true, y_pred, squared=False) # RMSE
         scores.append(score)
     mcrmse_score = np.mean(scores)
     return mcrmse_score, scores

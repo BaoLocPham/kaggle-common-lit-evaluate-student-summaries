@@ -183,6 +183,7 @@ def train_main(config):
     train = prompts_train.merge(summary_train, on="prompt_id")
     train = slit_folds(train, n_fold=cfg.n_fold, seed=42)
     cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
+    cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -195,7 +196,7 @@ def train_main(config):
             train=train, cfg=cfg, fold=fold)
         LOGGER.info(
             f'Number of batches in Train {len(train_loader) } and valid {len(valid_loader)} dataset')
-        model = CommontLitModel(cfg.model.model_name, cfg=cfg).to(cfg.device)
+        model = CommontLitModel(cfg.model.model_name, cfg=cfg.model).to(cfg.device)
         optimizer_parameters = get_optimizer_params(
             model,
             encoder_lr=cfg.model.encoder_lr,
@@ -259,7 +260,11 @@ def train_main(config):
         del model, train_loader, valid_loader, df_, valid_preds, valid_labels
         gc.collect()
         LOGGER.info('\n')
-
+    oof_df_ = pd.concat(oof_dfs , ignore_index=True )
+    s = score_loss(np.array(oof_df[['content' , 'wording']]) , np.array(oof_df[['pred_content' , 'pred_wording']]))
+    LOGGER.info(s)
+    oof_df_.to_csv(os.path.join(cfg.save_model_dir,
+                               'oof_df.csv') , index = False)
 
 if __name__ == "__main__":
     train_main()

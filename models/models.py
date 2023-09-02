@@ -10,12 +10,12 @@ class CommontLitModel(nn.Module):
     def __init__(self, model_name, cfg ):
         super(CommontLitModel, self).__init__()
         
-        self.model = AutoModel.from_pretrained(cfg.model.model_name)
-        self.config = AutoConfig.from_pretrained(cfg.model.model_name)
+        self.model = AutoModel.from_pretrained(cfg.model_name)
+        self.config = AutoConfig.from_pretrained(cfg.model_name)
         #self.drop = nn.Dropout(p=0.2)
-        self.pooler = get_pooling_layer(cfg=cfg.model)
+        self.pooler = get_pooling_layer(cfg=cfg)
 
-        if cfg.model.pooling == 'MeanMax':
+        if cfg.pooling == 'MeanMax':
             self.fc = nn.Linear(2*self.config.hidden_size, 2)
         else:
             self.fc = nn.Linear(self.config.hidden_size, 2)
@@ -23,7 +23,7 @@ class CommontLitModel(nn.Module):
         
         self._init_weights(self.fc)
         
-        if cfg.model.freezing:
+        if cfg.freezing:
             top_half_layer_freeze(self.model)
         
     def _init_weights(self, module):

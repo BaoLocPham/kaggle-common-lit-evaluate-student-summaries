@@ -24,7 +24,6 @@ parameters:
     max_len: 32
     num_epoch: 5
     T_max: 500
-
     scheduler: "CosineAnnealingLR"
     min_lr: 1e-6
     freezing: False
@@ -34,3 +33,15 @@ parameters:
     decoder_lr: 1e-5
     eps: 1e-6
     betas: (0.9, 0.999)
+
+  inference:
+    select: "base"
+    model_name: "microsoft/deberta-v3-{select}"
+    only_model_name: "deberta-v3-{select}"
+    fold: 4
+    batch_size: 32
+    freezing: False
+    max_len: 32
+    pooling: "GemText"
+    load_model_dir: ""
+    output_dir: ""

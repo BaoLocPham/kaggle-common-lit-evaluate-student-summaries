@@ -12,6 +12,12 @@ def read_data(data_dir: str):
     summary_test = pd.read_csv(os.path.join(data_dir, 'summaries_test.csv'))
     return prompts_train, prompts_test,  summary_train, summary_test, submission
 
+def read_test(data_dir: str):
+    prompts_test = pd.read_csv(os.path.join(data_dir, 'prompts_test.csv'))
+    submission = pd.read_csv(os.path.join(data_dir, 'sample_submission.csv'))
+    summary_test = pd.read_csv(os.path.join(data_dir, 'summaries_test.csv'))
+    return prompts_test, summary_test, submission
+
 def merge_prompt_summary(prompts, summary):
     return prompts.merge(summary, on="prompt_id")
 
