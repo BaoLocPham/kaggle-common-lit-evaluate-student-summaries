@@ -261,7 +261,7 @@ def train_main(config):
         gc.collect()
         LOGGER.info('\n')
     oof_df_ = pd.concat(oof_dfs , ignore_index=True )
-    s = score_loss(np.array(oof_df[['content' , 'wording']]) , np.array(oof_df[['pred_content' , 'pred_wording']]))
+    s = score_loss(np.array(oof_df_[['content' , 'wording']]) , np.array(oof_df_[['pred_content' , 'pred_wording']]))
     LOGGER.info(s)
     oof_df_.to_csv(os.path.join(cfg.save_model_dir,
                                'oof_df.csv') , index = False)
