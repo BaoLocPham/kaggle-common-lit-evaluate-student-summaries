@@ -168,7 +168,7 @@ def oof_df(fold, true, pred):
     df_pred = pd.DataFrame(pred, columns=['pred_content', 'pred_wording'])
     df_real = pd.DataFrame(true, columns=['content', 'wording'])
 
-    df = pd.concat([df_real, df_pred], 1)
+    df = pd.concat([df_real, df_pred], axis=1)
     return df
 
 
