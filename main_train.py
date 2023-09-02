@@ -53,6 +53,19 @@ class CFG:
 
 cfg = CFG()
 
+@hydra.main(version_base=None, config_path="configs", config_name="config")
+def init_experiment(config):
+    configs = OmegaConf.to_container(
+        config, resolve=True, throw_on_missing=True
+    )
+    # print(configs)
+    wandb.login(key=config.wandb.WANDB_API_KEY) 
+    LOGGER.info(configs)
+    configs = configs['parameters']
+    configs['model']['model_name'] = configs['model']['model_name'].format(select=configs['model']['select'])
+    configs['model']['only_model_name'] = configs['model']['only_model_name'].format(select=configs['model']['select'])
+    run = wandb.init(entity=config.wandb.entity, project=config.wandb.project, config=configs)
+    return wandb
 
 def train_run(model, criterion, optimizer, dataloader):
 
@@ -241,7 +254,11 @@ def train_main(config):
 
             LOGGER.info(
                 f"Epoch {epoch} Training Loss {np.round(train_loss , 4)} Validation Loss {np.round(valid_loss , 4)}")
-
+            wandb.log({
+                f"Fold {fold} training loss" : np.round(train_loss , 4),
+                f"Fold {fold} validation loss" : np.round(valid_loss , 4),
+                f"Fold {fold} epoch" : epoch
+            })
         end = time.time()
         time_elapsed = end - start
 
@@ -257,14 +274,27 @@ def train_main(config):
         oof_dfs.append(df_)
         LOGGER.info(
             f" oof for fold {fold} ---> {score_loss(valid_labels, valid_preds )}")
+        score_loss_rs = score_loss(valid_labels, valid_preds)
+        wandb.log({
+                f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
+                f"Fold {fold} content_score" : score_loss_rs['content_score'],
+                f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
+                f"Fold {fold} epoch" : epoch
+        })
         del model, train_loader, valid_loader, df_, valid_preds, valid_labels
         gc.collect()
         LOGGER.info('\n')
     oof_df_ = pd.concat(oof_dfs , ignore_index=True )
-    s = score_loss(np.array(oof_df_[['content' , 'wording']]) , np.array(oof_df_[['pred_content' , 'pred_wording']]))
-    LOGGER.info(s)
+    average_score = score_loss(np.array(oof_df_[['content' , 'wording']]) , np.array(oof_df_[['pred_content' , 'pred_wording']]))
+    LOGGER.info(average_score)
+    wandb.log({
+        f"Average mcrmse_score" : average_score['mcrmse_score'],
+        f"Average content_score" : average_score['content_score'],
+        f"Average wording_score" : average_score['wording_score'],
+    })
     oof_df_.to_csv(os.path.join(cfg.save_model_dir,
                                'oof_df.csv') , index = False)
 
 if __name__ == "__main__":
+    init_experiment()
     train_main()
