@@ -1,11 +1,11 @@
-project: locpb/Common_Lit_Evaluate_Student_Summaries
+project: common-lit-eval-stu-summerize
 name: experiment-tracking-Common_Lit_Evaluate_Student_Summaries
 wandb:
-  WANDB_API_KEY: YOUR_WANDB_API
-  entity: YOUR_WANDB_API
-  project: Common_Lit_Evaluate_Student_Summaries
-  name: Common_Lit_Evaluate_Student_Summaries
-  group: Common_Lit_Evaluate_Student_Summaries_Training
+  WANDB_API_KEY: WANDB_API_KEY
+  entity: baolocpham
+  project: common-lit-eval-stu-summerize
+  name: common-lit-eval-stu-summerize
+  group: common-lit-eval-stu-summerize_training
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"

@@ -59,7 +59,7 @@ def init_experiment(config):
         config, resolve=True, throw_on_missing=True
     )
     # print(configs)
-    wandb.login(key=config.wandb.WANDB_API_KEY) 
+    wandb.login(key=os.environ['WANDB']) 
     LOGGER.info(configs)
     configs = configs['parameters']
     configs['model']['model_name'] = configs['model']['model_name'].format(select=configs['model']['select'])
