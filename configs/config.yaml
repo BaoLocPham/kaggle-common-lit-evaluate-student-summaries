@@ -27,6 +27,7 @@ parameters:
     scheduler: "CosineAnnealingLR"
     min_lr: 1e-6
     freezing: False
+    n_layers_freezing: 0
     pooling: "GemText"
     weight_decay: 1e-2
     encoder_lr: 1e-5
