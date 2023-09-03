@@ -1,41 +1,47 @@
-project: locpb/Common_Lit_Evaluate_Student_Summaries
+project: common-lit-eval-stu-summerize
 name: experiment-tracking-Common_Lit_Evaluate_Student_Summaries
 wandb:
-  WANDB_API_KEY: YOUR_WANDB_API
-  entity: YOUR_WANDB_API
-  project: Common_Lit_Evaluate_Student_Summaries
-  name: Common_Lit_Evaluate_Student_Summaries
-  group: Common_Lit_Evaluate_Student_Summaries_Training
+  WANDB_API_KEY: WANDB_API_KEY
+  entity: baolocpham
+  project: common-lit-eval-stu-summerize
+  name: common-lit-eval-stu-summerize
+  group: common-lit-eval-stu-summerize_training
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"
-  transformers:
-    max_seq_length: 512
-    add_prompt_question: False
-    add_prompt_text: False
-    fold: 0
-    num_proc: 4
-    dropout: 0.1
-  train_catboost:
-    debug: False
-    wandb: False
-    root_data_dir: "./icr-identify-age-related-conditions"
-    checkpoint_save_dir: "./"
-    output_data_dir: "./"
-    n_folds: 5
-    params:
-      iterations: 10000
-      verbose: 1000
-      learning_rate: 0.005
-      early_stopping_rounds: 1000
-      auto_class_weights: "Balanced"
-      loss_function: "MultiClass"
-      eval_metric: "MultiClass:use_weights=False"
-      random_seed: 42
-      use_best_model: True
-      l2_leaf_reg: 1
-      max_ctr_complexity: 15
-      max_depth: 10
-      grow_policy: Lossguide
-      max_leaves: 64
-      min_data_in_leaf: 40
+  n_fold: 5
+  save_model_dir: "./outputs"
+  model:
+    select: "base"
+    model_name: "microsoft/deberta-v3-{select}"
+    only_model_name: "deberta-v3-{select}"
+    tokenizer: None
+    accum_iter: 16
+    fold: 4
+    split: 5
+    seed: 42
+    batch_size: 2
+    max_len: 32
+    num_epoch: 5
+    T_max: 500
+    scheduler: "CosineAnnealingLR"
+    min_lr: 1e-6
+    freezing: False
+    pooling: "GemText"
+    weight_decay: 1e-2
+    encoder_lr: 1e-5
+    decoder_lr: 1e-5
+    eps: 1e-6
+    betas: (0.9, 0.999)
+
+  inference:
+    select: "base"
+    model_name: "microsoft/deberta-v3-{select}"
+    only_model_name: "deberta-v3-{select}"
+    fold: 4
+    batch_size: 32
+    freezing: False
+    max_len: 32
+    pooling: "GemText"
+    load_model_dir: ""
+    output_dir: ""
