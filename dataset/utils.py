@@ -22,11 +22,20 @@ def merge_prompt_summary(prompts, summary):
     return prompts.merge(summary, on="prompt_id")
 
 
-def slit_folds(train: pd.DataFrame, n_fold, seed):
+def slit_folds(train: pd.DataFrame, n_fold, seed, type="GroupKFold"):
     train['fold'] = -1
-    fold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=seed)
-    for n, (train_index, val_index) in enumerate(fold.split(train, train['prompt_id'])):
-        train.loc[val_index, 'fold'] = n
-    train['fold'] = train['fold'].astype(int)
-    fold_sizes = train.groupby('fold').size()
-    return train
+    if type=="GroupKFold":
+        fold = GroupKFold(n_splits=n_fold)
+        for n, (train_index, val_index) in enumerate(fold.split(train, groups=train['prompt_id'])):
+            train.loc[val_index, 'fold'] = n
+        train['fold'] = train['fold'].astype(int)
+        fold_sizes = train.groupby('fold').size()
+        return train
+    
+    else:
+        fold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=seed)
+        for n, (train_index, val_index) in enumerate(fold.split(train, train['prompt_id'])):
+            train.loc[val_index, 'fold'] = n
+        train['fold'] = train['fold'].astype(int)
+        fold_sizes = train.groupby('fold').size()
+        return train
