@@ -9,7 +9,7 @@ wandb:
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"
-  n_fold: 5
+  n_fold: 4
   save_model_dir: "./outputs"
   model:
     select: "base"
