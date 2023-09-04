@@ -194,7 +194,7 @@ def train_main(config):
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
     train = prompts_train.merge(summary_train, on="prompt_id")
-    train = slit_folds(train, n_fold=cfg.n_fold, seed=42)
+    train = slit_folds(train, n_fold=cfg.n_fold, seed=42, strategy=cfg.model.strategy)
     cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
     cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name)
