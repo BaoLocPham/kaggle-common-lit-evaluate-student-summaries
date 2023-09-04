@@ -21,7 +21,7 @@ class TrainDataset(Dataset):
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
-        full_text = full_text.replace("\n\n", "|")
+        # full_text = full_text.replace("\n\n", "|")
 
 
         inputs = self.tokenizer.encode_plus(
@@ -62,7 +62,7 @@ class TestDataset(Dataset):
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
-        full_text = full_text.replace("\n\n", "|")
+        # full_text = full_text.replace("\n\n", "|")
 
         inputs = self.tokenizer.encode_plus(
             full_text,
