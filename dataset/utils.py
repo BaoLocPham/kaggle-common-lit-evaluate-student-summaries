@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
 
+def process_text(text):
+    # TODO: process text before training, inference
+    pass
 
 def read_data(data_dir: str):
     prompts_train = pd.read_csv(os.path.join(data_dir, 'prompts_train.csv'))

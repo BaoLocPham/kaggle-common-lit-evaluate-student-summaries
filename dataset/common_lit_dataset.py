@@ -1,5 +1,7 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+import re
+
 
 
 class TrainDataset(Dataset):
@@ -21,8 +23,8 @@ class TrainDataset(Dataset):
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
-        # full_text = full_text.replace("\n\n", "|")
-
+        full_text = full_text.replace("\n", "|")
+        full_text = re.sub('<[^<]+?>', '', full_text)
 
         inputs = self.tokenizer.encode_plus(
             full_text,
@@ -62,7 +64,8 @@ class TestDataset(Dataset):
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
-        # full_text = full_text.replace("\n\n", "|")
+        full_text = full_text.replace("\n", "|")
+        full_text = re.sub('<[^<]+?>', '', full_text)
 
         inputs = self.tokenizer.encode_plus(
             full_text,
