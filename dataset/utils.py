@@ -2,9 +2,12 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
+import re
 
 def process_text(text):
     # TODO: process text before training, inference
+    full_text = full_text.replace("\n", "|")
+    full_text = re.sub('<[^<]+?>', '', full_text)
     pass
 
 def read_data(data_dir: str):

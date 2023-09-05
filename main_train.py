@@ -18,6 +18,7 @@ from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
+from awp import AWP
 from metrics import score_loss
 from dataset import collate, TrainDataset, read_data, slit_folds
 from models import CommontLitModel
@@ -67,7 +68,7 @@ def init_experiment(config):
     run = wandb.init(entity=config.wandb.entity, project=config.wandb.project, config=configs)
     return wandb
 
-def train_run(model, criterion, optimizer, dataloader):
+def train_run(model, criterion, optimizer, dataloader, epoch, awp, awp_start):
 
     model.train()
 
@@ -82,12 +83,16 @@ def train_run(model, criterion, optimizer, dataloader):
         targets = target.to(cfg.device, dtype=torch.float)
 
         batch_size = ids.size(0)
+        if epoch >= awp_start:
+                awp.perturb(ids, mask, targets, criterion)
+                
         outputs = model(ids, mask)
         loss = criterion(outputs, targets)
 
         # normalize loss to account for batch accumulation
         loss = loss / cfg.model.accum_iter
         loss.backward()
+        awp.restore()
 
         if ((batch_idx + 1) % cfg.model.accum_iter ==
                 0) or (batch_idx + 1 == len(dataloader)):
@@ -224,13 +229,15 @@ def train_main(config):
             optimizer, T_max=cfg.model.T_max, eta_min=cfg.model.min_lr)
 
         criterion = nn.SmoothL1Loss(reduction='mean')
-
+        awp = AWP(model, optimizer, adv_lr=0.001, adv_eps=0.001)
+        awp_start = 1.0
+        
         start = time.time()
         best_epoch_score = np.inf
         for epoch in range(cfg.model.num_epoch):
 
             train_loss = train_run(
-                model, criterion, optimizer, dataloader=train_loader)
+                model, criterion, optimizer, dataloader=train_loader, epoch=epoch, awp=awp, awp_start=awp_start)
             valid_loss, valid_preds, valid_labels = valid_run(
                 model, criterion, dataloader=valid_loader)
 
