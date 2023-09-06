@@ -259,6 +259,13 @@ def train_main(config):
                 f"Fold {fold} validation loss" : np.round(valid_loss , 4),
                 f"Fold {fold} epoch" : epoch
             })
+            score_loss_rs = score_loss(valid_labels, valid_preds)
+            wandb.log({
+                    f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
+                    f"Fold {fold} content_score" : score_loss_rs['content_score'],
+                    f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
+                    f"Fold {fold} epoch" : epoch
+            })
         end = time.time()
         time_elapsed = end - start
 
