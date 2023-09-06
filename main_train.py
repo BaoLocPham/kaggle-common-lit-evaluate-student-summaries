@@ -19,6 +19,7 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
+from loss import MCRMSELoss
 from dataset import collate, TrainDataset, read_data, slit_folds
 from models import CommontLitModel
 
@@ -223,7 +224,8 @@ def train_main(config):
         scheduler = lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=cfg.model.T_max, eta_min=cfg.model.min_lr)
 
-        criterion = nn.SmoothL1Loss(reduction='mean')
+        # criterion = nn.SmoothL1Loss(reduction='mean')
+        criterion = MCRMSELoss()
 
         start = time.time()
         best_epoch_score = np.inf
