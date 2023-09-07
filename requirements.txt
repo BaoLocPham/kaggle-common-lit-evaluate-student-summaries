@@ -12,4 +12,3 @@ sentencepiece
 scikit-learn
 matplotlib
 seaborn
-Sophia-Optimizer

@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
-from Sophia import SophiaG
+from sophia import SophiaG
 from metrics import score_loss
 from loss import MCRMSELoss
 from dataset import collate, TrainDataset, read_data, slit_folds
@@ -217,7 +217,7 @@ def train_main(config):
             encoder_lr=cfg.model.encoder_lr,
             decoder_lr=cfg.model.decoder_lr,
             weight_decay=cfg.model.weight_decay)
-        # optimizer = AdamW(
+        # optimizer = SophiaG(
         #     optimizer_parameters,
         #     lr=cfg.model.encoder_lr,
         #     eps=cfg.model.eps,
@@ -227,7 +227,7 @@ def train_main(config):
             optimizer, T_max=cfg.model.T_max, eta_min=cfg.model.min_lr)
 
         # criterion = nn.SmoothL1Loss(reduction='mean')
-        criterion = ()
+        criterion = MCRMSELoss()
 
         start = time.time()
         best_epoch_score = np.inf
