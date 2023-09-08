@@ -143,16 +143,18 @@ def infer_main(config):
         shuffle=False,
         pin_memory=True)
     final_preds = []
-    for fold in range(cfg.n_fold):
+    
+    for fold in range(cfg.inference.n_fold):
         print('******** fold', fold, '********')
 
         model = CommontLitModel(model_name=cfg.inference.model_name, cfg=cfg.inference).to(cfg.device)
         model.load_state_dict(torch.load(
             os.path.join(
                 cfg.inference.load_model_dir,
-                f"{cfg.inference.only_model_name}_Fold_{fold}.pth"
+                f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth"
             ),
             map_location=torch.device('cpu')))
+        print(f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth")
         preds = test_run(model, test_loader)
         final_preds.append(preds)
         del model
