@@ -39,7 +39,8 @@ parameters:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
-    fold: 4
+    n_fold: 4
+    fold_to_inference: 0
     batch_size: 32
     freezing: False
     max_len: 32
