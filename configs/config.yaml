@@ -11,6 +11,8 @@ parameters:
   root_data_dir: "./data"
   n_fold: 4
   save_model_dir: "./outputs"
+  preprocess_text: False
+  debug: False
   model:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"

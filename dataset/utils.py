@@ -3,12 +3,32 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
 import re
+import string
+import spacy
 
-def process_text(text):
-    # TODO: process text before training, inference
-    full_text = full_text.replace("\n", "|")
-    full_text = re.sub('<[^<]+?>', '', full_text)
-    pass
+def preprocess_text_helper(text):
+    try:
+        text = text.replace("\n", " ")
+        words = text.split()
+        words = [word.lower() for word in words]
+        table = str.maketrans("", "", string.punctuation)
+        stripped = [w.translate(table) for w in words]
+        words = [word for word in stripped if word.isalpha()]
+        stop_words = spacy.lang.en.stop_words.STOP_WORDS
+        words = [w for w in words if not w in stop_words]
+        text = " ".join(words)
+        return text
+    except:
+        return text
+    
+def preprocess_text(data: pd.DataFrame):
+    data["prompt_title"] = data["prompt_title"].apply(lambda x: preprocess_text_helper(x))
+    data["prompt_question"] = data["prompt_question"].apply(
+        lambda x: preprocess_text_helper(x)
+    )
+    data["prompt_text"] = data["prompt_text"].apply(lambda x: preprocess_text_helper(x))
+    data["text"] = data["text"].apply(lambda x: preprocess_text_helper(x))
+    return data
 
 def read_data(data_dir: str):
     prompts_train = pd.read_csv(os.path.join(data_dir, 'prompts_train.csv'))
@@ -30,6 +50,8 @@ def merge_prompt_summary(prompts, summary):
 
 def slit_folds(train: pd.DataFrame, n_fold, seed, strategy ="GroupKFold"):
     train['fold'] = -1
+    if n_fold==1:
+        pass
     if strategy =="GroupKFold":
         fold = GroupKFold(n_splits=n_fold)
         for n, (train_index, val_index) in enumerate(fold.split(train, groups=train['prompt_id'])):
