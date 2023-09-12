@@ -148,7 +148,7 @@ def infer_main(config):
     final_preds = []
     
     for fold in range(cfg.inference.n_fold):
-        LOGGER.info('******** fold', fold, '********')
+        LOGGER.info(f'******** fold { fold} ********')
 
         model = CommontLitModel(model_name=cfg.inference.model_name, cfg=cfg.inference).to(cfg.device)
         model.load_state_dict(torch.load(
@@ -169,7 +169,7 @@ def infer_main(config):
     test[target_cols] = final_preds_
     submission = submission.drop(columns=target_cols).merge(
         test[['student_id'] + target_cols], on='student_id', how='left')
-    LOGGER.info(submission.head())
+    print(submission.head())
     submission[['student_id'] + target_cols].to_csv(
         os.path.join(
             cfg.inference.output_dir, 'submission.csv'
