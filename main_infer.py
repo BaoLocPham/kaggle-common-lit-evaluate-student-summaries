@@ -19,7 +19,7 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TestDataset, read_test
+from dataset import collate, TestDataset, read_test, preprocess_text
 from models import CommontLitModel
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -134,6 +134,9 @@ def infer_main(config):
     prompts_test, summary_test, submission = read_test(
         data_dir=cfg.root_data_dir)
     test = prompts_test.merge(summary_test, on="prompt_id")
+    if cfg.preprocess_text:
+        LOGGER.info("Performing preprocess text")
+        test = preprocess_text(test)
 
     test_dataset = TestDataset(test, cfg=cfg)
     test_loader = DataLoader(
@@ -145,7 +148,7 @@ def infer_main(config):
     final_preds = []
     
     for fold in range(cfg.inference.n_fold):
-        print('******** fold', fold, '********')
+        LOGGER.info('******** fold', fold, '********')
 
         model = CommontLitModel(model_name=cfg.inference.model_name, cfg=cfg.inference).to(cfg.device)
         model.load_state_dict(torch.load(
@@ -154,7 +157,7 @@ def infer_main(config):
                 f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth"
             ),
             map_location=torch.device('cpu')))
-        print(f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth")
+        LOGGER.info(f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth")
         preds = test_run(model, test_loader)
         final_preds.append(preds)
         del model
@@ -166,7 +169,7 @@ def infer_main(config):
     test[target_cols] = final_preds_
     submission = submission.drop(columns=target_cols).merge(
         test[['student_id'] + target_cols], on='student_id', how='left')
-    print(submission.head())
+    LOGGER.info(submission.head())
     submission[['student_id'] + target_cols].to_csv(
         os.path.join(
             cfg.inference.output_dir, 'submission.csv'

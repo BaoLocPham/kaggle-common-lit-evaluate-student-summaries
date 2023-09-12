@@ -12,3 +12,4 @@ sentencepiece
 scikit-learn
 matplotlib
 seaborn
+spacy

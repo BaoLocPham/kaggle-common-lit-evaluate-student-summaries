@@ -19,7 +19,8 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TrainDataset, read_data, slit_folds
+from loss import MCRMSELoss
+from dataset import collate, TrainDataset, read_data, slit_folds, preprocess_text
 from models import CommontLitModel
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -59,12 +60,13 @@ def init_experiment(config):
         config, resolve=True, throw_on_missing=True
     )
     # print(configs)
-    wandb.login(key=os.environ['WANDB']) 
     LOGGER.info(configs)
     configs = configs['parameters']
     configs['model']['model_name'] = configs['model']['model_name'].format(select=configs['model']['select'])
     configs['model']['only_model_name'] = configs['model']['only_model_name'].format(select=configs['model']['select'])
-    run = wandb.init(entity=config.wandb.entity, project=config.wandb.project, config=configs)
+    if not configs['debug']:
+        wandb.login(key=os.environ['WANDB']) 
+        run = wandb.init(entity=config.wandb.entity, project=config.wandb.project, config=configs)
     return wandb
 
 def train_run(model, criterion, optimizer, dataloader):
@@ -194,7 +196,10 @@ def train_main(config):
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
     train = prompts_train.merge(summary_train, on="prompt_id")
-    train = slit_folds(train, n_fold=cfg.n_fold, seed=42)
+    if cfg.preprocess_text:
+        LOGGER.info("Performing preprocess text")
+        train = preprocess_text(train)
+    train = slit_folds(train, n_fold=cfg.n_fold, seed=42, strategy=cfg.model.strategy)
     cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
     cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name)
@@ -223,7 +228,8 @@ def train_main(config):
         scheduler = lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=cfg.model.T_max, eta_min=cfg.model.min_lr)
 
-        criterion = nn.SmoothL1Loss(reduction='mean')
+        # criterion = nn.SmoothL1Loss(reduction='mean')
+        criterion = MCRMSELoss()
 
         start = time.time()
         best_epoch_score = np.inf
@@ -254,11 +260,21 @@ def train_main(config):
 
             LOGGER.info(
                 f"Epoch {epoch} Training Loss {np.round(train_loss , 4)} Validation Loss {np.round(valid_loss , 4)}")
-            wandb.log({
+            if not cfg.debug:
+                wandb.log({
                 f"Fold {fold} training loss" : np.round(train_loss , 4),
                 f"Fold {fold} validation loss" : np.round(valid_loss , 4),
                 f"Fold {fold} epoch" : epoch
-            })
+                })
+            score_loss_rs = score_loss(valid_labels, valid_preds)
+
+            if not cfg.debug:
+                wandb.log({
+                        f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
+                        f"Fold {fold} content_score" : score_loss_rs['content_score'],
+                        f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
+                        f"Fold {fold} epoch" : epoch
+                })
         end = time.time()
         time_elapsed = end - start
 
@@ -275,23 +291,25 @@ def train_main(config):
         LOGGER.info(
             f" oof for fold {fold} ---> {score_loss(valid_labels, valid_preds )}")
         score_loss_rs = score_loss(valid_labels, valid_preds)
-        wandb.log({
-                f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
-                f"Fold {fold} content_score" : score_loss_rs['content_score'],
-                f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
-                f"Fold {fold} epoch" : epoch
-        })
+        if not cfg.debug:
+            wandb.log({
+                    f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
+                    f"Fold {fold} content_score" : score_loss_rs['content_score'],
+                    f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
+                    f"Fold {fold} epoch" : epoch
+            })
         del model, train_loader, valid_loader, df_, valid_preds, valid_labels
         gc.collect()
         LOGGER.info('\n')
     oof_df_ = pd.concat(oof_dfs , ignore_index=True )
     average_score = score_loss(np.array(oof_df_[['content' , 'wording']]) , np.array(oof_df_[['pred_content' , 'pred_wording']]))
     LOGGER.info(average_score)
-    wandb.log({
+    if not cfg.debug:
+        wandb.log({
         f"Average mcrmse_score" : average_score['mcrmse_score'],
         f"Average content_score" : average_score['content_score'],
         f"Average wording_score" : average_score['wording_score'],
-    })
+        })
     oof_df_.to_csv(os.path.join(cfg.save_model_dir,
                                'oof_df.csv') , index = False)
 
