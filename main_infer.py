@@ -121,13 +121,13 @@ def infer_main(config):
     # print(config_)
     cfg.__dict__.update(config.parameters)
     print(vars(cfg))
-    # cfg.inference.model_name = cfg.model.model_name.format(
+    # cfg.inference_stage_1.model_name = cfg.model.model_name.format(
     #     select=cfg.model.select)
-    # cfg.inference.only_model_name = cfg.model.only_model_name.format(
+    # cfg.inference_stage_1.only_model_name = cfg.model.only_model_name.format(
     #     select=cfg.model.select)
     # cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
     # cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
-    tokenizer = AutoTokenizer.from_pretrained(cfg.inference.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.inference_stage_1.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -141,23 +141,27 @@ def infer_main(config):
     test_dataset = TestDataset(test, cfg=cfg)
     test_loader = DataLoader(
         test_dataset,
-        batch_size=cfg.inference.batch_size,
+        batch_size=cfg.inference_stage_1.batch_size,
         num_workers=2,
         shuffle=False,
         pin_memory=True)
     final_preds = []
-    
-    for fold in range(cfg.inference.n_fold):
+
+    for fold in range(cfg.inference_stage_1.n_fold):
         LOGGER.info(f'******** fold { fold} ********')
 
-        model = CommontLitModel(model_name=cfg.inference.model_name, cfg=cfg.inference).to(cfg.device)
-        model.load_state_dict(torch.load(
-            os.path.join(
-                cfg.inference.load_model_dir,
-                f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth"
-            ),
-            map_location=torch.device('cpu')))
-        LOGGER.info(f"{cfg.inference.only_model_name}_Fold_{fold if cfg.inference.n_fold > 1 else cfg.inference.fold_to_inference}.pth")
+        model = CommontLitModel(
+            model_name=cfg.inference_stage_1.model_name,
+            cfg=cfg.inference_stage_1).to(
+            cfg.device)
+        model.load_state_dict(
+            torch.load(
+                os.path.join(
+                    cfg.inference_stage_1.load_model_dir,
+                    f"{cfg.inference_stage_1.only_model_name}_Fold_{fold if cfg.inference_stage_1.n_fold > 1 else cfg.inference_stage_1.fold_to_inference}.pth"),
+                map_location=torch.device('cpu')))
+        LOGGER.info(
+            f"{cfg.inference_stage_1.only_model_name}_Fold_{fold if cfg.inference_stage_1.n_fold > 1 else cfg.inference_stage_1.fold_to_inference}.pth")
         preds = test_run(model, test_loader)
         final_preds.append(preds)
         del model
@@ -167,13 +171,23 @@ def infer_main(config):
     final_preds_ = np.mean(final_preds, axis=0)
     target_cols = ['content', 'wording']
     test[target_cols] = final_preds_
-    submission = submission.drop(columns=target_cols).merge(
-        test[['student_id'] + target_cols], on='student_id', how='left')
-    print(submission.head())
-    submission[['student_id'] + target_cols].to_csv(
-        os.path.join(
-            cfg.inference.output_dir, 'submission.csv'
-        ), index=False)
+    if cfg.inference_stage_1.have_next_stage:
+        submission = submission.drop(columns=target_cols).merge(
+            test, on='student_id', how='left')
+        print(submission.head())
+        submission.to_csv(
+            os.path.join(
+                cfg.inference_stage_1.output_dir,
+                cfg.inference_stage_1.output_file),
+            index=False)
+    else:
+        submission = submission.drop(columns=target_cols).merge(
+            test[['student_id'] + target_cols], on='student_id', how='left')
+        print(submission.head())
+        submission[['student_id'] + target_cols].to_csv(
+            os.path.join(
+                cfg.inference_stage_1.output_dir, 'submission.csv'
+            ), index=False)
 
 
 if __name__ == "__main__":

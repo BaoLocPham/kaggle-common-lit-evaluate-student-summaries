@@ -38,7 +38,7 @@ parameters:
     eps: 1e-6
     betas: (0.9, 0.999)
 
-  inference:
+  inference_stage_1:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
@@ -50,3 +50,5 @@ parameters:
     pooling: "GemText"
     load_model_dir: ""
     output_dir: ""
+    output_file: "stage_1_output.csv"
+    have_next_stage: False
