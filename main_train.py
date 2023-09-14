@@ -54,6 +54,19 @@ class CFG:
 
 cfg = CFG()
 
+def seed_everything(seed: int):
+    import random, os
+    import numpy as np
+    import torch
+    
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def init_experiment(config):
     configs = OmegaConf.to_container(
@@ -314,5 +327,6 @@ def train_main(config):
                                'oof_df.csv') , index = False)
 
 if __name__ == "__main__":
+    seed_everything(seed=42)
     init_experiment()
     train_main()

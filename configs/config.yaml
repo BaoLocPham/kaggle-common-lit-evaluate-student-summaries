@@ -52,3 +52,13 @@ parameters:
     output_dir: ""
     output_file: "stage_1_output.csv"
     have_next_stage: False
+  
+  inference_stage_2:    
+    boosting_type: 'gbdt'
+    random_state: 42
+    objective: 'regression'
+    metric: 'rmse'
+    learning_rate: 0.048
+    max_depth: 3
+    lambda_l1: 0.0
+    lambda_l2: 0.011
