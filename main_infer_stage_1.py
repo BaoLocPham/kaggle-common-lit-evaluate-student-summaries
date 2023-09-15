@@ -119,11 +119,13 @@ def infer_main(config):
 
     if cfg.inference_stage_1.have_next_stage:
         LOGGER.info("Load training data to inference stage 1")
-        prompts_train, _, summary_train, _, _ = read_data(
-        data_dir=cfg.root_data_dir)
-        test = prompts_train.merge(summary_train, on="prompt_id")
-        targets = ["content","wording"]
-        test.drop(columns=targets, inplace=True)
+        # prompts_train, _, summary_train, _, _ = read_data(
+        # data_dir=cfg.root_data_dir)
+        # test = prompts_train.merge(summary_train, on="prompt_id")
+        # targets = ["content","wording"]
+        # test.drop(columns=targets, inplace=True)
+        prompts_test, summary_test, submission = read_test(data_dir=cfg.root_data_dir)
+        test = prompts_test.merge(summary_test, on="prompt_id")
     else:
         prompts_test, summary_test, submission = read_test(
         data_dir=cfg.root_data_dir)
