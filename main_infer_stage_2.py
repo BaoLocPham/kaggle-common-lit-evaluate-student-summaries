@@ -87,8 +87,7 @@ def train_main(config):
             os.path.join(
                 cfg.inference_stage_2.input_dir,
                 cfg.inference_stage_2.input_file
-            ),
-            index=False
+            )
         )
     drop_columns = [
         # "fold",

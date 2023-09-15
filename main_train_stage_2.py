@@ -88,8 +88,8 @@ def train_main(config):
     # prompts_train.fillna('nan',inplace=True)
     # summary_train.fillna('nan',inplace=True)
     train = preprocessor.run(prompts_train, summary_train, mode="train")
-    train["content"] = train["stage_1_content"]
-    train["wording"] = train["stage_1_wording"]
+    train["stage_1_content"] = train["content"]
+    train["stage_1_wording"] = train["wording"]
     train = slit_folds(
         train,
         n_fold=cfg.n_fold,
