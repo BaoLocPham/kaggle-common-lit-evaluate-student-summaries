@@ -175,7 +175,7 @@ def infer_main(config):
         # submission = submission.drop(columns=target_cols).merge(
         #     test, on='student_id', how='left')
         # print(submission.head())
-        test.rename(columns={'content': 'stage_1_content'
+        test.rename(columns={'content': 'stage_1_content',
                              'wording': 'stage_1_wording'
                              }, inplace=True)
         print(test.head())
