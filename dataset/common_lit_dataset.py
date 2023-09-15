@@ -8,7 +8,7 @@ class TrainDataset(Dataset):
     def __init__(self, df, cfg):
         self.df = df
         self.tokenizer = cfg.tokenizer
-        self.max_len = cfg.model.max_len
+        self.max_len = cfg.train_stage_1.max_len
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.text = df['text'].values
@@ -50,7 +50,7 @@ class TestDataset(Dataset):
     def __init__(self, df, cfg):
         self.df = df
         self.tokenizer = cfg.tokenizer
-        self.max_len = cfg.inference.max_len
+        self.max_len = cfg.inference_stage_1.max_len
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.text = df['text'].values
