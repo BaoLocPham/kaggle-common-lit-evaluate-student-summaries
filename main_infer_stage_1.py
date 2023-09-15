@@ -131,8 +131,8 @@ def infer_main(config):
         data_dir=cfg.root_data_dir)
         # test = prompts_test.merge(summary_test, on="prompt_id")
     preprocessor = Preprocessor()
-    train = preprocessor.run(prompts_test, summary_test, mode="test")
-    
+    test = preprocessor.run(prompts_test, summary_test, mode="test")
+
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         test = preprocess_text(test)
