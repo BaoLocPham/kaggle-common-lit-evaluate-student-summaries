@@ -103,8 +103,8 @@ def train_main(config):
         models = []
         for fold in range(cfg.n_fold):
             model = joblib.load(os.path.join(
-                cfg.train_stage_2.output_model_dir,
-                cfg.train_stage_2.output_model_name.format(
+                cfg.infer_stage_2.input_model_dir,
+                cfg.infer_stage_2.input_model_name.format(
                     target=target,
                     fold=fold)))
             models.append(model)

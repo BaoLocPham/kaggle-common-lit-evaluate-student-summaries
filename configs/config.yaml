@@ -78,6 +78,8 @@ parameters:
     input_file: "stage_1_output.csv"
     output_dir: "./"
     output_file: "submission.csv"
+    input_model_dir: "./"
+    input_model_name: "lgbm_{target}_{fold}.pkl"
     boosting_type: 'gbdt'
     random_state: 42
     objective: 'regression'
