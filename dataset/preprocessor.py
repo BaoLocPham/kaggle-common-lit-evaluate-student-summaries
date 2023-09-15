@@ -1,6 +1,6 @@
 import nltk
-nltk.download('stopwords')
-nltk.download('punkt')
+# nltk.download('stopwords')
+# nltk.download('punkt')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
@@ -8,10 +8,10 @@ from nltk.tokenize.treebank import TreebankWordDetokenizer
 # from spellchecker import SpellChecker
 import spacy
 import spacy.cli
-try:
-    spacy.load('en_core_web_lg',)
-except:
-    spacy.cli.download("en_core_web_lg")
+# try:
+#     spacy.load('en_core_web_lg',)
+# except:
+#     spacy.cli.download("en_core_web_lg")
 import pandas as pd
 from typing import List
 import re
