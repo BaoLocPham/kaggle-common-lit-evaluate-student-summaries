@@ -19,7 +19,7 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TestDataset, read_data, read_test, preprocess_text
+from dataset import collate, TestDataset, read_data, read_test, preprocess_text, Preprocessor
 from models import CommontLitModel
 from utils import get_logger
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -124,12 +124,15 @@ def infer_main(config):
         # test = prompts_train.merge(summary_train, on="prompt_id")
         # targets = ["content","wording"]
         # test.drop(columns=targets, inplace=True)
-        prompts_test, summary_test, submission = read_test(data_dir=cfg.root_data_dir)
-        test = prompts_test.merge(summary_test, on="prompt_id")
+        prompts_test, summary_test, submission = read_test(
+            data_dir=cfg.root_data_dir)
+        # test = prompts_test.merge(summary_test, on="prompt_id")
     else:
         prompts_test, summary_test, submission = read_test(
-        data_dir=cfg.root_data_dir)
-        test = prompts_test.merge(summary_test, on="prompt_id")
+            data_dir=cfg.root_data_dir)
+        # test = prompts_test.merge(summary_test, on="prompt_id")
+    preprocessor = Preprocessor()
+    test = preprocessor.run(prompts_test, summary_test, mode="test")
 
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
@@ -172,6 +175,9 @@ def infer_main(config):
         # submission = submission.drop(columns=target_cols).merge(
         #     test, on='student_id', how='left')
         # print(submission.head())
+        test.rename(columns={'content': 'stage_1_content',
+                             'wording': 'stage_1_wording'
+                             }, inplace=True)
         print(test.head())
         test.to_csv(
             os.path.join(

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from utils import get_logger
 from models import CommontLitModel
-from dataset import collate, TrainDataset, read_data, slit_folds, preprocess_text
+from dataset import collate, TrainDataset, read_data, slit_folds, preprocess_text, Preprocessor
 from loss import MCRMSELoss
 from metrics import score_loss
 from transformers import AdamW, AutoTokenizer
@@ -206,7 +206,10 @@ def train_main(config):
     cfg.__dict__.update(config.parameters)
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
-    train = prompts_train.merge(summary_train, on="prompt_id")
+    # train = prompts_train.merge(summary_train, on="prompt_id")
+    preprocessor = Preprocessor()
+    train = preprocessor.run(prompts_train, summary_train, mode="train")
+
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         train = preprocess_text(train)

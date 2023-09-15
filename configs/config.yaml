@@ -59,6 +59,7 @@ parameters:
   train_stage_2:    
     # input_dir: "./"
     # input_file: "stage_1_output.csv"
+    
     output_dir: "./"
     output_file: "stage_2_output.csv"
     output_model_dir: "./"
@@ -88,3 +89,4 @@ parameters:
     max_depth: 3
     lambda_l1: 0.0
     lambda_l2: 0.011
+    have_stage_1: False

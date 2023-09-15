@@ -17,7 +17,7 @@ import gc
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from metrics import score_loss
 from loss import MCRMSELoss
-from dataset import read_data, read_test, read_data_stage_2, slit_folds, preprocess_text, Preprocessor
+from dataset import read_data, read_test, read_submission, read_data_stage_2, slit_folds, preprocess_text, Preprocessor
 import joblib
 import lightgbm as lgb
 
@@ -77,19 +77,27 @@ def init_experiment(config):
 def train_main(config):
     config_ = OmegaConf.to_yaml(config)
     cfg.__dict__.update(config.parameters)
-    prompts_test, summary_test, submission = read_test(
-        data_dir=cfg.root_data_dir)
-
-    preprocessor = Preprocessor()
-    test = preprocessor.run(prompts_test, summary_test, mode="test")
+    if not cfg.inference_stage_2.have_stage_1:
+        prompts_test, summary_test, submission = read_test(
+            data_dir=cfg.root_data_dir)
+        preprocessor = Preprocessor()
+        test = preprocessor.run(prompts_test, summary_test, mode="test")
+    else:
+        test = pd.read_csv(
+            os.path.join(
+                cfg.inference_stage_2.input_dir,
+                cfg.inference_stage_2.input_file
+            ),
+            index=False
+        )
     drop_columns = [
         # "fold",
-        "student_id", "prompt_id", "text", 
+        "student_id", "prompt_id", "text",
         # "fixed_summary_text",
         "prompt_question", "prompt_title",
         "prompt_text",
         # "input"
-    ] 
+    ]
     # + [
     #     f"content_pred_{i}" for i in range(cfg.n_fold)
     # ] + [
@@ -123,7 +131,7 @@ def train_main(config):
             preds.append(pred)
 
         pred_dict[target] = preds
-    
+
     for target in targets:
         preds = pred_dict[target]
         for i, pred in enumerate(preds):
@@ -141,6 +149,7 @@ def train_main(config):
 
     LOGGER.info("Final Submission")
     LOGGER.info(test[["student_id", "content", "wording"]].head())
+
 
 if __name__ == "__main__":
     train_main()
