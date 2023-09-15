@@ -85,8 +85,8 @@ def train_main(config):
     #     train = preprocess_text(train)
     # train_with_output = read_data_stage_2(data_dir=cfg.train_stage_2.input_dir,file_name=cfg.train_stage_2.input_file)
     preprocessor = Preprocessor()
-    prompts_train.fillna('nan',inplace=True)
-    summary_train.fillna('nan',inplace=True)
+    # prompts_train.fillna('nan',inplace=True)
+    # summary_train.fillna('nan',inplace=True)
     train = preprocessor.run(prompts_train, summary_train, mode="train")
     train = slit_folds(
         train,

@@ -19,7 +19,7 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TestDataset, read_data, read_test, preprocess_text
+from dataset import collate, TestDataset, read_data, read_test, preprocess_text, Preprocessor
 from models import CommontLitModel
 from utils import get_logger
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -125,12 +125,14 @@ def infer_main(config):
         # targets = ["content","wording"]
         # test.drop(columns=targets, inplace=True)
         prompts_test, summary_test, submission = read_test(data_dir=cfg.root_data_dir)
-        test = prompts_test.merge(summary_test, on="prompt_id")
+        # test = prompts_test.merge(summary_test, on="prompt_id")
     else:
         prompts_test, summary_test, submission = read_test(
         data_dir=cfg.root_data_dir)
-        test = prompts_test.merge(summary_test, on="prompt_id")
-
+        # test = prompts_test.merge(summary_test, on="prompt_id")
+    preprocessor = Preprocessor()
+    train = preprocessor.run(prompts_test, summary_test, mode="test")
+    
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         test = preprocess_text(test)
