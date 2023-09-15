@@ -209,8 +209,7 @@ def train_main(config):
     # train = prompts_train.merge(summary_train, on="prompt_id")
     preprocessor = Preprocessor()
     train = preprocessor.run(prompts_train, summary_train, mode="train")
-    train["content"] = train["stage_1_content"]
-    train["wording"] = train["stage_1_wording"]
+
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         train = preprocess_text(train)
