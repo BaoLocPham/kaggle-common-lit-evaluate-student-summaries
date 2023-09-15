@@ -124,11 +124,12 @@ def infer_main(config):
         # test = prompts_train.merge(summary_train, on="prompt_id")
         # targets = ["content","wording"]
         # test.drop(columns=targets, inplace=True)
-        prompts_test, summary_test, submission = read_test(data_dir=cfg.root_data_dir)
+        prompts_test, summary_test, submission = read_test(
+            data_dir=cfg.root_data_dir)
         # test = prompts_test.merge(summary_test, on="prompt_id")
     else:
         prompts_test, summary_test, submission = read_test(
-        data_dir=cfg.root_data_dir)
+            data_dir=cfg.root_data_dir)
         # test = prompts_test.merge(summary_test, on="prompt_id")
     preprocessor = Preprocessor()
     test = preprocessor.run(prompts_test, summary_test, mode="test")
@@ -174,6 +175,9 @@ def infer_main(config):
         # submission = submission.drop(columns=target_cols).merge(
         #     test, on='student_id', how='left')
         # print(submission.head())
+        test.rename(columns={'content': 'stage_1_content'
+                             'wording': 'stage_1_wording'
+                             }, inplace=True)
         print(test.head())
         test.to_csv(
             os.path.join(

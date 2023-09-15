@@ -90,7 +90,6 @@ def train_main(config):
             ),
             index=False
         )
-
     drop_columns = [
         # "fold",
         "student_id", "prompt_id", "text",
