@@ -13,4 +13,5 @@ scikit-learn
 matplotlib
 seaborn
 spacy
+nltk
 lightgbm==4.1.0

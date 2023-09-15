@@ -1,19 +1,32 @@
 import nltk
+nltk.download('stopwords')
+nltk.download('punkt')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
+# from autocorrect import Speller
+# from spellchecker import SpellChecker
 import spacy
+import spacy.cli
+try:
+    spacy.load('en_core_web_lg',)
+except:
+    spacy.cli.download("en_core_web_lg")
 import pandas as pd
+from typing import List
+import re
+from collections import Counter
+from tqdm import tqdm
+tqdm.pandas()
 
 
 class Preprocessor:
     def __init__(self, 
-                model_name: str,
+                model_name: str="concac",
                 ) -> None:
         self.twd = TreebankWordDetokenizer()
         self.STOP_WORDS = set(stopwords.words('english'))
-        
-        self.spacy_ner_model = spacy.load('en_core_web_sm',)
+        self.spacy_ner_model = spacy.load('en_core_web_lg',)
         # self.speller = Speller(lang='en')
         # self.spellchecker = SpellChecker() 
         
@@ -25,6 +38,7 @@ class Preprocessor:
         prompt_words = row['prompt_tokens']
         summary_words = row['summary_tokens']
         if self.STOP_WORDS:
+            # print(prompt_words, summary_words)
             prompt_words = list(filter(check_is_stop_word, prompt_words))
             summary_words = list(filter(check_is_stop_word, summary_words))
         return len(set(prompt_words).intersection(set(summary_words)))
@@ -86,15 +100,15 @@ class Preprocessor:
         else:
             return 0
 
-    def spelling(self, text):
+    # def spelling(self, text):
         
-        wordlist=text.split()
-        amount_miss = len(list(self.spellchecker.unknown(wordlist)))
+    #     wordlist=text.split()
+    #     amount_miss = len(list(self.spellchecker.unknown(wordlist)))
 
-        return amount_miss
+    #     return amount_miss
     
-    def add_spelling_dictionary(self, tokens: List[str]) -> List[str]:
-        """dictionary update for pyspell checker and autocorrect"""
+    # def add_spelling_dictionary(self, tokens: List[str]) -> List[str]:
+    #     """dictionary update for pyspell checker and autocorrect"""
         # self.spellchecker.word_frequency.load_words(tokens)
         # self.speller.nlp_data.update({token:1000 for token in tokens})
     
@@ -120,18 +134,18 @@ class Preprocessor:
         )
         
         # Add prompt tokens into spelling checker dictionary
-        prompts["prompt_tokens"].apply(
-            lambda x: self.add_spelling_dictionary(x)
-        )
+        # prompts["prompt_tokens"].apply(
+        #     lambda x: self.add_spelling_dictionary(x)
+        # )
         
-#         from IPython.core.debugger import Pdb; Pdb().set_trace()
-        # fix misspelling
-        summaries["fixed_summary_text"] = summaries["text"].progress_apply(
-            lambda x: self.speller(x)
-        )
+# #         from IPython.core.debugger import Pdb; Pdb().set_trace()
+#         # fix misspelling
+#         summaries["fixed_summary_text"] = summaries["text"].progress_apply(
+#             lambda x: self.speller(x)
+#         )
         
-        # count misspelling
-        summaries["splling_err_num"] = summaries["text"].progress_apply(self.spelling)
+#         # count misspelling
+#         summaries["splling_err_num"] = summaries["text"].progress_apply(self.spelling)
         
         # merge prompts and summaries
         input_df = summaries.merge(prompts, how="left", on="prompt_id")
@@ -154,4 +168,3 @@ class Preprocessor:
         
         return input_df.drop(columns=["summary_tokens", "prompt_tokens"])
     
-preprocessor = Preprocessor(model_name=CFG.model_name)

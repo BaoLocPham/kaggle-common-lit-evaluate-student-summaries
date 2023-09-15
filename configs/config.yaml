@@ -13,10 +13,13 @@ parameters:
   save_model_dir: "./outputs"
   preprocess_text: False
   debug: False
-  model:
+  
+  train_stage_1:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
+    output_model_dir: "./"
+    output_model_name: "deberta-v3-{select}_Fold_{fold}.pth"
     tokenizer: None
     accum_iter: 16
     fold: 4
@@ -50,10 +53,31 @@ parameters:
     pooling: "GemText"
     load_model_dir: ""
     output_dir: ""
-    output_file: "stage_1_output.csv"
     have_next_stage: False
-  
+    output_file: "stage_1_output.csv"
+
+  train_stage_2:    
+    # input_dir: "./"
+    # input_file: "stage_1_output.csv"
+    output_dir: "./"
+    output_file: "stage_2_output.csv"
+    output_model_dir: "./"
+    output_model_name: "lgbm_{target}_{fold}.pkl"
+    strategy: "GroupKFold"
+    boosting_type: 'gbdt'
+    random_state: 42
+    objective: 'regression'
+    metric: 'rmse'
+    learning_rate: 0.048
+    max_depth: 3
+    lambda_l1: 0.0
+    lambda_l2: 0.011  
+
   inference_stage_2:    
+    input_dir: "./"
+    input_file: "stage_1_output.csv"
+    output_dir: "./"
+    output_file: "submission.csv"
     boosting_type: 'gbdt'
     random_state: 42
     objective: 'regression'
