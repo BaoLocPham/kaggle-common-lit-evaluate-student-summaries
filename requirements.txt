@@ -15,3 +15,7 @@ seaborn
 spacy
 nltk
 lightgbm==4.1.0
+textstat
+autocorrect==2.6.1
+pyspellchecker==0.7.2
+Pyphen==0.10.0

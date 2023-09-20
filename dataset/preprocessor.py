@@ -12,6 +12,8 @@ import spacy.cli
 #     spacy.load('en_core_web_lg',)
 # except:
 #     spacy.cli.download("en_core_web_lg")
+
+import textstat
 import pandas as pd
 from typing import List
 import re
