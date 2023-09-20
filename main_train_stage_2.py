@@ -19,6 +19,9 @@ from metrics import score_loss
 from loss import MCRMSELoss
 from dataset import read_data, read_prompt_grade, preprocess_and_join, read_data_stage_2, slit_folds, preprocess_text, Preprocessor
 import joblib
+# import lightgbm as lgb
+import optuna
+# import optuna.integration.lightgbm as lgb
 import lightgbm as lgb
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -70,6 +73,41 @@ def init_experiment(config):
             group='training_stage_2',
             config=configs)
     return wandb
+
+
+def objective(trial, dtrain, dval):
+    max_depth = trial.suggest_int('max_depth', 2, 10)
+    params = {
+        'boosting_type': 'gbdt',
+        'random_state': 42,
+        'objective': 'regression',
+        'metric': 'rmse',
+        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.1, ),
+        'max_depth': max_depth,
+        'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-8, 10.0),
+        'lambda_l2': trial.suggest_loguniform('lambda_l2', 1e-8, 10.0),
+        'num_leaves': trial.suggest_int('num_leaves', 2, 2**max_depth - 1),
+        'verbosity': -1  # Add this line to suppress warnings and info messages
+    }
+
+    evaluation_results = {}
+    model = lgb.train(params,
+                      num_boost_round=10000,
+                      valid_names=['train', 'valid'],
+                      train_set=dtrain,
+                      valid_sets=dval,
+                    #   verbose_eval=1000,
+                    #   early_stopping_rounds=30,
+                      callbacks=[
+                          lgb.early_stopping(
+                                        stopping_rounds=30, verbose=True),
+                          lgb.record_evaluation(evaluation_results)])
+
+    # Use the last metric for early stopping
+    evals_result = model.best_score
+    last_metric = list(evals_result.values())[-1]
+    trial.set_user_attr('best_model', model)  # Save the model in the trial
+    return last_metric[list(last_metric.keys())[-1]]
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
@@ -141,7 +179,8 @@ def train_main(config):
 
             dtrain = lgb.Dataset(X_train_cv, label=y_train_cv)
             dval = lgb.Dataset(X_eval_cv, label=y_eval_cv)
-            params = {
+            if not cfg.train_stage_2.use_optuna:
+                params = {
                 'boosting_type': 'gbdt',
                 'random_state': 42,
                 'objective': 'regression',
@@ -150,23 +189,30 @@ def train_main(config):
                 'max_depth': 3,
                 'lambda_l1': 0.0,
                 'lambda_l2': 0.011
-            }
+                }
 
-            evaluation_results = {}
-            model = lgb.train(params,
-                              num_boost_round=10000,
-                              # categorical_feature = categorical_features,
-                              valid_names=['train', 'valid'],
-                              train_set=dtrain,
-                              valid_sets=dval,
-                              callbacks=[
-                                  lgb.early_stopping(
-                                      stopping_rounds=30, verbose=True),
-                                  lgb.log_evaluation(100),
-                                  lgb.callback.record_evaluation(
-                                      evaluation_results)
-                              ],
-                              )
+                evaluation_results = {}
+                model = lgb.train(params,
+                                num_boost_round=10000,
+                                # categorical_feature = categorical_features,
+                                valid_names=['train', 'valid'],
+                                train_set=dtrain,
+                                valid_sets=dval,
+                                callbacks=[
+                                    lgb.early_stopping(
+                                        stopping_rounds=30, verbose=True),
+                                    lgb.log_evaluation(100),
+                                    lgb.callback.record_evaluation(
+                                        evaluation_results)
+                                ],
+                                )
+            else:
+                study = optuna.create_study(direction='minimize')
+                study.optimize(lambda trial: objective(trial, dtrain=dtrain, dval=dval), n_trials=100)
+                
+                print('Best trial: score {}, params {}'.format(study.best_value, study.best_params))
+
+                model = study.trials[study.best_trial.number].user_attrs['best_model']
             # save model
             joblib.dump(
                 model,

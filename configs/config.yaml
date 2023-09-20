@@ -66,6 +66,7 @@ parameters:
     output_model_dir: "./"
     output_model_name: "lgbm_{target}_{fold}.pkl"
     strategy: "GroupKFold"
+    use_optuna: False
     boosting_type: 'gbdt'
     random_state: 42
     objective: 'regression'
