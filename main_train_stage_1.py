@@ -2,26 +2,29 @@
 # Libraries
 # =========================================================================================
 from __future__ import absolute_import
-import numpy as np
-import pandas as pd
-from utils import get_logger
-from models import CommontLitModel
-from dataset import collate, TrainDataset, read_data, slit_folds, preprocess_text, Preprocessor
-from loss import MCRMSELoss
-from metrics import score_loss
-from transformers import AdamW, AutoTokenizer
-import torch.nn as nn
-from torch.optim import lr_scheduler
-from torch.utils.data import DataLoader
-import gc
-import torch
-from tqdm import tqdm
-import time
-import hydra
-from omegaconf import DictConfig, OmegaConf
-import wandb
-import warnings
+from dataset import (collate, TrainDataset, read_data,
+                     read_prompt_grade,
+                     preprocess_and_join,
+                     slit_folds, preprocess_text, Preprocessor)
 import os.path
+import warnings
+import wandb
+from omegaconf import DictConfig, OmegaConf
+import hydra
+import time
+from tqdm import tqdm
+import torch
+import gc
+from torch.utils.data import DataLoader
+from torch.optim import lr_scheduler
+import torch.nn as nn
+from transformers import AdamW, AutoTokenizer
+from metrics import score_loss
+from loss import MCRMSELoss
+from models import CommontLitModel
+from utils import get_logger
+import pandas as pd
+import numpy as np
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -206,6 +209,13 @@ def train_main(config):
     cfg.__dict__.update(config.parameters)
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
+    prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+    prompts_train = preprocess_and_join(
+        prompts_train,
+        prompt_grade,
+        'prompt_title',
+        'title',
+        'grade')
     # train = prompts_train.merge(summary_train, on="prompt_id")
     preprocessor = Preprocessor()
     train = preprocessor.run(prompts_train, summary_train, mode="train")

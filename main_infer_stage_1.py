@@ -19,7 +19,7 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TestDataset, read_data, read_test, preprocess_text, Preprocessor
+from dataset import collate, TestDataset, read_prompt_grade, preprocess_and_join, read_data, read_test, preprocess_text, Preprocessor
 from models import CommontLitModel
 from utils import get_logger
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -131,6 +131,13 @@ def infer_main(config):
         prompts_test, summary_test, submission = read_test(
             data_dir=cfg.root_data_dir)
         # test = prompts_test.merge(summary_test, on="prompt_id")
+    prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+    prompts_test = preprocess_and_join(
+        prompts_test,
+        prompt_grade,
+        'prompt_title',
+        'title',
+        'grade')
     preprocessor = Preprocessor()
     test = preprocessor.run(prompts_test, summary_test, mode="test")
 
@@ -179,6 +186,7 @@ def infer_main(config):
                              'wording': 'stage_1_wording'
                              }, inplace=True)
         print(test.head())
+        print(test.columns)
         test.to_csv(
             os.path.join(
                 cfg.inference_stage_1.output_dir,
@@ -192,7 +200,6 @@ def infer_main(config):
             os.path.join(
                 cfg.inference_stage_1.output_dir, 'submission.csv'
             ), index=False)
-
 
 if __name__ == "__main__":
     infer_main()

@@ -55,11 +55,37 @@ def read_test(data_dir: str):
 def merge_prompt_summary(prompts, summary):
     return prompts.merge(summary, on="prompt_id")
 
+def read_prompt_grade(data_dir: str):
+    prompt_grade = pd.read_csv(os.path.join(data_dir, 'prompt_grade.csv'))
+    return prompt_grade
+
+def preprocess_and_join(df1, df2, df1_title_col, df2_title_col, grade_col):
+    # Copy dataframes to avoid modifying the originals
+    df1 = df1.copy()
+    df2 = df2.copy()
+
+    # Preprocess titles
+    df1[df1_title_col] = df1[df1_title_col].str.replace('"', '').str.strip()
+    df2[df2_title_col] = df2[df2_title_col].str.replace('"', '').str.strip()
+
+    # Remove duplicate grades
+    df2 = df2.drop_duplicates(subset=df2_title_col, keep='first')
+
+    # Join dataframes
+    merged_df = df1.merge(df2, how='left', left_on=df1_title_col, right_on=df2_title_col)
+    
+
+    # Postprocess grades
+    merged_df[grade_col] = merged_df[grade_col].fillna(0)
+    merged_df[grade_col] = merged_df[grade_col].astype(int).astype('category')
+
+    return merged_df
 
 def slit_folds(train: pd.DataFrame, n_fold, seed, strategy ="GroupKFold"):
     train['fold'] = -1
     if n_fold==1:
         pass
+    print(f"Splitting by strategy: {strategy}")
     if strategy =="GroupKFold":
         fold = GroupKFold(n_splits=n_fold)
         for n, (train_index, val_index) in enumerate(fold.split(train, groups=train['prompt_id'])):
@@ -80,4 +106,11 @@ def slit_folds(train: pd.DataFrame, n_fold, seed, strategy ="GroupKFold"):
         fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
         for n, (train_index, valid_index) in enumerate(fold.split(train, train["bin10_content"])):
             train.loc[valid_index, "fold"] = n
+        return train
+    elif "GroupKFold_grade":
+        fold = GroupKFold(n_splits=n_fold)
+        for n, (train_index, val_index) in enumerate(fold.split(train, groups=train['grade'])):
+            train.loc[val_index, 'fold'] = n
+        train['fold'] = train['fold'].astype(int)
+        fold_sizes = train.groupby('fold').size()
         return train

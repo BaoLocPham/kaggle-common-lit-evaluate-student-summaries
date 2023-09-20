@@ -17,7 +17,7 @@ import gc
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from metrics import score_loss
 from loss import MCRMSELoss
-from dataset import read_data, read_data_stage_2, slit_folds, preprocess_text, Preprocessor
+from dataset import read_data, read_prompt_grade, preprocess_and_join, read_data_stage_2, slit_folds, preprocess_text, Preprocessor
 import joblib
 import lightgbm as lgb
 
@@ -61,7 +61,7 @@ def init_experiment(config):
     LOGGER.info(configs)
     debug = config['parameters']['debug']
     configs = configs['parameters']['train_stage_2']
-    
+
     if not debug:
         wandb.login(key=os.environ['WANDB'])
         run = wandb.init(
@@ -79,6 +79,13 @@ def train_main(config):
     cfg.__dict__.update(config.parameters)
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
+    prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+    prompts_train = preprocess_and_join(
+        prompts_train,
+        prompt_grade,
+        'prompt_title',
+        'title',
+        'grade')
     # train = prompts_train.merge(summary_train, on="prompt_id")
     # if cfg.preprocess_text:
     #     LOGGER.info("Performing preprocess text")
@@ -90,12 +97,13 @@ def train_main(config):
     train = preprocessor.run(prompts_train, summary_train, mode="train")
     train["stage_1_content"] = train["content"]
     train["stage_1_wording"] = train["wording"]
+    print(train['grade'].value_counts())
     train = slit_folds(
         train,
         n_fold=cfg.n_fold,
         seed=42,
         strategy=cfg.train_stage_2.strategy)
-
+    print(train['grade'].value_counts())
     targets = ["content", "wording"]
 
     drop_columns = [
@@ -106,8 +114,16 @@ def train_main(config):
         # "fixed_summary_text",
         "prompt_question",
         "prompt_title",
-        "prompt_text"
-        ] + targets
+        "prompt_text",
+        "title", "author",
+        "description", "genre",
+        "path", "date",
+        "intro", "excerpt",
+        "license", "notes",
+        "genre_big_group",
+        "grade"
+
+    ] + targets
 
     model_dict = {}
 
@@ -125,7 +141,6 @@ def train_main(config):
 
             dtrain = lgb.Dataset(X_train_cv, label=y_train_cv)
             dval = lgb.Dataset(X_eval_cv, label=y_eval_cv)
-
             params = {
                 'boosting_type': 'gbdt',
                 'random_state': 42,

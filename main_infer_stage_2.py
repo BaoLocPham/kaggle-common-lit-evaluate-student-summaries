@@ -90,18 +90,21 @@ def train_main(config):
             )
         )
     drop_columns = [
-        # "fold",
-        "student_id", "prompt_id", "text",
-        # "fixed_summary_text",
-        "prompt_question", "prompt_title",
+        "student_id",
+        "prompt_id",
+        "text",
+        "prompt_question",
+        "prompt_title",
         "prompt_text",
-        # "input"
+        "title", "author",
+        "description", "genre",
+        "path", "date",
+        "intro", "excerpt",
+        "license", "notes",
+        "genre_big_group",
+        "grade"
     ]
-    # + [
-    #     f"content_pred_{i}" for i in range(cfg.n_fold)
-    # ] + [
-    #     f"wording_pred_{i}" for i in range(cfg.n_fold)
-    # ]
+
     model_dict = {}
     targets = ["content", "wording"]
 
@@ -125,6 +128,8 @@ def train_main(config):
 
         for fold, model in enumerate(models):
             X_eval_cv = test.drop(columns=drop_columns)
+            # print(X_eval_cv['grade'])
+
 
             pred = model.predict(X_eval_cv)
             preds.append(pred)
