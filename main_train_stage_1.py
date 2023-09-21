@@ -114,7 +114,7 @@ def train_run(model, criterion, optimizer, dataloader, scheduler):
 
         running_loss += (loss.item() * batch_size)
         dataset_size += batch_size
-        scheduler.step()
+        # scheduler.step()
     epoch_loss = running_loss / dataset_size
     gc.collect()
     return epoch_loss
