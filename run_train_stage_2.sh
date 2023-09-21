@@ -9,5 +9,6 @@ python main_train_stage_2.py \
     parameters.root_data_dir="./data" \
     parameters.n_fold=4 \
     parameters.debug=True \
+    parameters.train_stage_2.use_optuna=True \
     parameters.train_stage_2.output_model_dir="./outputs" \
     parameters.train_stage_2.strategy="GroupKFold_grade" 

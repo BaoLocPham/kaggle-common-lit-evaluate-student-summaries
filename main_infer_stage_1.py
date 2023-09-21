@@ -144,8 +144,9 @@ def infer_main(config):
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         test = preprocess_text(test)
-
+    print(test[['prompt_title', 'prompt_question', 'text']])
     test_dataset = TestDataset(test, cfg=cfg)
+    test_dataset
     test_loader = DataLoader(
         test_dataset,
         batch_size=cfg.inference_stage_1.batch_size,

@@ -4,8 +4,8 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
-# from autocorrect import Speller
-# from spellchecker import SpellChecker
+from autocorrect import Speller
+from spellchecker import SpellChecker
 import spacy
 import spacy.cli
 # try:
@@ -29,8 +29,8 @@ class Preprocessor:
         self.twd = TreebankWordDetokenizer()
         self.STOP_WORDS = set(stopwords.words('english'))
         self.spacy_ner_model = spacy.load('en_core_web_lg',)
-        # self.speller = Speller(lang='en')
-        # self.spellchecker = SpellChecker() 
+        self.speller = Speller(lang='en')
+        self.spellchecker = SpellChecker() 
         
     def word_overlap_count(self, row):
         """ intersection(prompt_text, text) """        
@@ -102,17 +102,17 @@ class Preprocessor:
         else:
             return 0
 
-    # def spelling(self, text):
+    def spelling(self, text):
         
-    #     wordlist=text.split()
-    #     amount_miss = len(list(self.spellchecker.unknown(wordlist)))
+        wordlist=text.split()
+        amount_miss = len(list(self.spellchecker.unknown(wordlist)))
 
-    #     return amount_miss
+        return amount_miss
     
-    # def add_spelling_dictionary(self, tokens: List[str]) -> List[str]:
-    #     """dictionary update for pyspell checker and autocorrect"""
-        # self.spellchecker.word_frequency.load_words(tokens)
-        # self.speller.nlp_data.update({token:1000 for token in tokens})
+    def add_spelling_dictionary(self, tokens: List[str]) -> List[str]:
+        """dictionary update for pyspell checker and autocorrect"""
+        self.spellchecker.word_frequency.load_words(tokens)
+        self.speller.nlp_data.update({token:1000 for token in tokens})
     
     def run(self, 
             prompts: pd.DataFrame,
@@ -140,14 +140,14 @@ class Preprocessor:
         #     lambda x: self.add_spelling_dictionary(x)
         # )
         
-# #         from IPython.core.debugger import Pdb; Pdb().set_trace()
-#         # fix misspelling
-#         summaries["fixed_summary_text"] = summaries["text"].progress_apply(
-#             lambda x: self.speller(x)
-#         )
+#         from IPython.core.debugger import Pdb; Pdb().set_trace()
+        # fix misspelling
+        summaries["fixed_summary_text"] = summaries["text"].progress_apply(
+            lambda x: self.speller(x)
+        )
         
-#         # count misspelling
-#         summaries["splling_err_num"] = summaries["text"].progress_apply(self.spelling)
+        # count misspelling
+        summaries["splling_err_num"] = summaries["text"].progress_apply(self.spelling)
         
         # merge prompts and summaries
         input_df = summaries.merge(prompts, how="left", on="prompt_id")
