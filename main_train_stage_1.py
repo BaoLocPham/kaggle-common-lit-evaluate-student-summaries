@@ -85,7 +85,7 @@ def init_experiment(config):
     return wandb
 
 
-def train_run(model, criterion, optimizer, dataloader, scheduler):
+def train_run(model, criterion, optimizer, dataloader):
 
     model.train()
 
@@ -104,17 +104,17 @@ def train_run(model, criterion, optimizer, dataloader, scheduler):
         loss = criterion(outputs, targets)
 
         # normalize loss to account for batch accumulation
-        loss = loss / cfg.train_stage_1.accum_iter
+        loss = loss / cfg.model.accum_iter
         loss.backward()
 
-        if ((batch_idx + 1) % cfg.train_stage_1.accum_iter ==
+        if ((batch_idx + 1) % cfg.model.accum_iter ==
                 0) or (batch_idx + 1 == len(dataloader)):
             optimizer.step()
             optimizer.zero_grad()
 
         running_loss += (loss.item() * batch_size)
         dataset_size += batch_size
-        # scheduler.step()
+
     epoch_loss = running_loss / dataset_size
     gc.collect()
     return epoch_loss
@@ -219,9 +219,9 @@ def train_main(config):
             'prompt_title',
             'title',
             'grade')
-    # train = prompts_train.merge(summary_train, on="prompt_id")
-    preprocessor = Preprocessor()
-    train = preprocessor.run(prompts_train, summary_train, mode="train")
+    train = prompts_train.merge(summary_train, on="prompt_id")
+    # preprocessor = Preprocessor()
+    # train = preprocessor.run(prompts_train, summary_train, mode="train")
     # print(train[['prompt_title', 'prompt_question', 'text']])
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
@@ -275,7 +275,7 @@ def train_main(config):
         for epoch in range(cfg.train_stage_1.num_epoch):
 
             train_loss = train_run(
-                model, criterion, optimizer, dataloader=train_loader, scheduler=scheduler)
+                model, criterion, optimizer, dataloader=train_loader)
             valid_loss, valid_preds, valid_labels = valid_run(
                 model, criterion, dataloader=valid_loader)
 
