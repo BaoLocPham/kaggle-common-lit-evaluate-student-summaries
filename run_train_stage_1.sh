@@ -16,7 +16,7 @@ python main_train_stage_1.py \
 python main_train_stage_1.py \
     parameters.n_fold=4 \
     parameters.root_data_dir="./data" \
-    parameters.grade_data_dir="./data" \
+    parameters.grade_data_dir="" \
     parameters.save_model_dir="./outputs" \
     parameters.debug=True \
     parameters.preprocess_text=True \
@@ -26,4 +26,4 @@ python main_train_stage_1.py \
     parameters.train_stage_1.max_len=2 \
     parameters.train_stage_1.freezing=True \
     parameters.train_stage_1.n_layers_freezing=4 \
-    parameters.train_stage_1.strategy="GroupKFold_grade" 
+    parameters.train_stage_1.strategy="GroupKFold" 

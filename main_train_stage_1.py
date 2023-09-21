@@ -210,13 +210,15 @@ def train_main(config):
     cfg.__dict__.update(config.parameters)
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
-    prompt_grade = read_prompt_grade(cfg.grade_data_dir)
-    prompts_train = preprocess_and_join(
-        prompts_train,
-        prompt_grade,
-        'prompt_title',
-        'title',
-        'grade')
+    if cfg.grade_data_dir != "":
+        LOGGER.info("Merging with prompt_grade")
+        prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+        prompts_train = preprocess_and_join(
+            prompts_train,
+            prompt_grade,
+            'prompt_title',
+            'title',
+            'grade')
     # train = prompts_train.merge(summary_train, on="prompt_id")
     preprocessor = Preprocessor()
     train = preprocessor.run(prompts_train, summary_train, mode="train")
@@ -256,15 +258,15 @@ def train_main(config):
             lr=cfg.train_stage_1.encoder_lr,
             eps=cfg.train_stage_1.eps,
             betas=cfg.train_stage_1.betas)
-        # scheduler = lr_scheduler.CosineAnnealingLR(
-        #     optimizer,
-        #     T_max=cfg.train_stage_1.T_max,
-        #     eta_min=cfg.train_stage_1.min_lr)
-        scheduler = transformers.get_linear_schedule_with_warmup(
-            optimizer=optimizer,
-            num_warmup_steps=len(train_loader)*0.1*cfg.train_stage_1.num_epoch,
-            num_training_steps=len(train_loader)*cfg.train_stage_1.num_epoch
-        )
+        scheduler = lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=cfg.train_stage_1.T_max,
+            eta_min=cfg.train_stage_1.min_lr)
+        # scheduler = transformers.get_linear_schedule_with_warmup(
+        #     optimizer=optimizer,
+        #     num_warmup_steps=len(train_loader)*0.1*cfg.train_stage_1.num_epoch,
+        #     num_training_steps=len(train_loader)*cfg.train_stage_1.num_epoch
+        # )
 
         criterion = MCRMSELoss()
 
