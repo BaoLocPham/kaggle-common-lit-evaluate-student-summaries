@@ -11,7 +11,7 @@ class TrainDataset(Dataset):
         self.max_len = cfg.train_stage_1.max_len
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
-        self.text = df['text'].values
+        self.text = df['fixed_summary_text'].values
         self.targets = df[['content', 'wording']].values
 
     def __len__(self):

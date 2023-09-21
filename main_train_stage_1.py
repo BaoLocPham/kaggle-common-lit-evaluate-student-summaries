@@ -85,7 +85,7 @@ def init_experiment(config):
     return wandb
 
 
-def train_run(model, criterion, optimizer, dataloader):
+def train_run(model, criterion, optimizer, dataloader, scheduler):
 
     model.train()
 
@@ -104,17 +104,18 @@ def train_run(model, criterion, optimizer, dataloader):
         loss = criterion(outputs, targets)
 
         # normalize loss to account for batch accumulation
-        loss = loss / cfg.model.accum_iter
+        loss = loss / cfg.train_stage_1.accum_iter
         loss.backward()
 
-        if ((batch_idx + 1) % cfg.model.accum_iter ==
+        if ((batch_idx + 1) % cfg.train_stage_1.accum_iter ==
                 0) or (batch_idx + 1 == len(dataloader)):
             optimizer.step()
             optimizer.zero_grad()
 
         running_loss += (loss.item() * batch_size)
         dataset_size += batch_size
-
+        if scheduler:
+            scheduler.step()
     epoch_loss = running_loss / dataset_size
     gc.collect()
     return epoch_loss
@@ -219,10 +220,10 @@ def train_main(config):
             'prompt_title',
             'title',
             'grade')
-    train = prompts_train.merge(summary_train, on="prompt_id")
-    # preprocessor = Preprocessor()
-    # train = preprocessor.run(prompts_train, summary_train, mode="train")
-    # print(train[['prompt_title', 'prompt_question', 'text']])
+    # train = prompts_train.merge(summary_train, on="prompt_id")
+    preprocessor = Preprocessor()
+    train = preprocessor.run(prompts_train, summary_train, mode="train")
+    print(train[['prompt_title', 'prompt_question', 'text', 'fixed_summary_text']])
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")
         train = preprocess_text(train)
@@ -258,10 +259,14 @@ def train_main(config):
             lr=cfg.train_stage_1.encoder_lr,
             eps=cfg.train_stage_1.eps,
             betas=cfg.train_stage_1.betas)
-        scheduler = lr_scheduler.CosineAnnealingLR(
-            optimizer,
-            T_max=cfg.train_stage_1.T_max,
-            eta_min=cfg.train_stage_1.min_lr)
+        
+        scheduler = None
+        if cfg.train_stage_1.scheduler != "":
+            scheduler = lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=cfg.train_stage_1.T_max,
+                eta_min=cfg.train_stage_1.min_lr)
+        
         # scheduler = transformers.get_linear_schedule_with_warmup(
         #     optimizer=optimizer,
         #     num_warmup_steps=len(train_loader)*0.1*cfg.train_stage_1.num_epoch,
@@ -275,7 +280,7 @@ def train_main(config):
         for epoch in range(cfg.train_stage_1.num_epoch):
 
             train_loss = train_run(
-                model, criterion, optimizer, dataloader=train_loader)
+                model, criterion, optimizer, dataloader=train_loader, scheduler=scheduler)
             valid_loss, valid_preds, valid_labels = valid_run(
                 model, criterion, dataloader=valid_loader)
 
