@@ -53,8 +53,8 @@ class TestDataset(Dataset):
         self.df = df
         self.tokenizer = cfg.tokenizer
         self.max_len = cfg.inference_stage_1.max_len
-        self.max_len_char_title = cfg.train_stage_1.max_len_char_title
-        self.max_len_char_question = cfg.train_stage_1.max_len_char_question
+        self.max_len_char_title = cfg.inference_stage_1.max_len_char_title
+        self.max_len_char_question = cfg.inference_stage_1.max_len_char_question
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.text = df['text'].values
