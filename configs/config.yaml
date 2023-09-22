@@ -28,6 +28,8 @@ parameters:
     seed: 42
     batch_size: 2
     max_len: 32
+    max_len_char_title: 100
+    max_len_char_question: 300
     num_epoch: 5
     T_max: 500
     scheduler: "CosineAnnealingLR"
