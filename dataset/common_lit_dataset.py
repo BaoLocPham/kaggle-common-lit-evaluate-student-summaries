@@ -9,6 +9,8 @@ class TrainDataset(Dataset):
         self.df = df
         self.tokenizer = cfg.tokenizer
         self.max_len = cfg.train_stage_1.max_len
+        self.max_len_char_title = cfg.train_stage_1.max_len_char_title
+        self.max_len_char_question = cfg.train_stage_1.max_len_char_question
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.text = df['fixed_summary_text'].values
@@ -18,8 +20,8 @@ class TrainDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, index):
-        pt = self.pt[index]
-        pq = self.pq[index]
+        pt = self.pt[index][:self.max_len_char_title]
+        pq = self.pq[index][:self.max_len_char_question]
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
@@ -51,7 +53,8 @@ class TestDataset(Dataset):
         self.df = df
         self.tokenizer = cfg.tokenizer
         self.max_len = cfg.inference_stage_1.max_len
-        print(f"max len: {self.max_len}")
+        self.max_len_char_title = cfg.inference_stage_1.max_len_char_title
+        self.max_len_char_question = cfg.inference_stage_1.max_len_char_question
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.text = df['text'].values
@@ -60,8 +63,8 @@ class TestDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, index):
-        pt = self.pt[index]
-        pq = self.pq[index]
+        pt = self.pt[index][:self.max_len_char_title]
+        pq = self.pq[index][:self.max_len_char_question]
         text = self.text[index]
         full_text = pt + " " + self.tokenizer.sep_token + \
             pq + " " + self.tokenizer.sep_token + " " + text
