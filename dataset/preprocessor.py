@@ -26,6 +26,9 @@ except:
     import sys
     sys.path.append("/kaggle/working/textstat-mit/textstat")
     sys.path.append("/kaggle/working/autocorrect-mit/autocorrect-1.1.0")
+    from autocorrect import Speller
+    from spellchecker import SpellChecker
+    import textstat
 tqdm.pandas()
 
 
