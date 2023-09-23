@@ -138,13 +138,14 @@ def infer_main(config):
         'prompt_title',
         'title',
         'grade')
-    preprocessor = Preprocessor()
-    test = preprocessor.run(prompts_test, summary_test, mode="test")
-
-    if cfg.preprocess_text:
-        LOGGER.info("Performing preprocess text")
-        test = preprocess_text(test)
-    print(test[['prompt_title', 'prompt_question', 'text']])
+    if cfg.debug:
+        test = prompts_test.merge(summary_test, on="prompt_id")
+        print(cfg.inference_stage_1.full_text)
+        test["fixed_summary_text"] = test["text"]
+    else:
+        preprocessor = Preprocessor()
+        test = preprocessor.run(prompts_test, summary_test, mode="test")
+    print(test[['prompt_title', 'prompt_question', 'text', 'fixed_summary_text']])
     test_dataset = TestDataset(test, cfg=cfg)
     test_dataset
     test_loader = DataLoader(
@@ -162,6 +163,10 @@ def infer_main(config):
             model_name=cfg.inference_stage_1.model_name,
             cfg=cfg.inference_stage_1).to(
             cfg.device)
+        if cfg.debug:
+            print(f"""PATH :{os.path.join(
+                    cfg.inference_stage_1.load_model_dir,
+                    f"{cfg.inference_stage_1.only_model_name}_Fold_{fold if cfg.inference_stage_1.n_fold > 1 else cfg.inference_stage_1.fold_to_inference}.pth")}""")
         model.load_state_dict(
             torch.load(
                 os.path.join(
