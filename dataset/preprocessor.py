@@ -4,8 +4,7 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.tokenize.treebank import TreebankWordDetokenizer
-from autocorrect import Speller
-from spellchecker import SpellChecker
+
 import spacy
 import spacy.cli
 # try:
@@ -19,6 +18,14 @@ from typing import List
 import re
 from collections import Counter
 from tqdm import tqdm
+try:
+    from autocorrect import Speller
+    from spellchecker import SpellChecker
+    import textstat
+except:
+    import sys
+    sys.path.append("/kaggle/working/textstat-mit/textstat")
+    sys.path.append("/kaggle/working/autocorrect-mit/autocorrect-1.1.0")
 tqdm.pandas()
 
 
