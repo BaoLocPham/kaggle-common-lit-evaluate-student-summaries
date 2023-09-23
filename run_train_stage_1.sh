@@ -26,6 +26,7 @@ python main_train_stage_1.py \
     parameters.train_stage_1.max_len=2 \
     parameters.train_stage_1.max_len_char_title=100 \
     parameters.train_stage_1.max_len_char_question=100 \
+    parameters.train_stage_1.max_len_char_prompt_text=100\
     parameters.train_stage_1.scheduler="" \
     parameters.train_stage_1.freezing=True \
     parameters.train_stage_1.n_layers_freezing=4 \

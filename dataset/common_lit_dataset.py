@@ -11,8 +11,11 @@ class TrainDataset(Dataset):
         self.max_len = cfg.train_stage_1.max_len
         self.max_len_char_title = cfg.train_stage_1.max_len_char_title
         self.max_len_char_question = cfg.train_stage_1.max_len_char_question
+        self.max_len_char_prompt_text = cfg.train_stage_1.max_len_char_prompt_text
+
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
+        self.ptext = df['prompt_text'].values
         self.text = df['fixed_summary_text'].values
         self.targets = df[['content', 'wording']].values
 
@@ -22,11 +25,12 @@ class TrainDataset(Dataset):
     def __getitem__(self, index):
         pt = self.pt[index][:self.max_len_char_title]
         pq = self.pq[index][:self.max_len_char_question]
+        ptext = self.ptext[index][:self.max_len_char_prompt_text]
         text = self.text[index]
-        full_text = pt + " " + self.tokenizer.sep_token + \
-            pq + " " + self.tokenizer.sep_token + " " + text
-        # full_text = full_text.replace("\n", "|")
-        # full_text = re.sub('<[^<]+?>', '', full_text)
+        full_text = pt + self.tokenizer.sep_token + \
+            pq + self.tokenizer.sep_token + ptext + \
+                self.tokenizer.sep_token +  text
+
 
         inputs = self.tokenizer.encode_plus(
             full_text,
@@ -55,8 +59,10 @@ class TestDataset(Dataset):
         self.max_len = cfg.inference_stage_1.max_len
         self.max_len_char_title = cfg.inference_stage_1.max_len_char_title
         self.max_len_char_question = cfg.inference_stage_1.max_len_char_question
+        self.max_len_char_prompt_text = cfg.train_stage_1.max_len_char_prompt_text
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
+        self.ptext = df['prompt_text'].values
         self.text = df['text'].values
 
     def __len__(self):
@@ -65,11 +71,12 @@ class TestDataset(Dataset):
     def __getitem__(self, index):
         pt = self.pt[index][:self.max_len_char_title]
         pq = self.pq[index][:self.max_len_char_question]
+        ptext = self.ptext[index][:self.max_len_char_prompt_text]
         text = self.text[index]
-        full_text = pt + " " + self.tokenizer.sep_token + \
-            pq + " " + self.tokenizer.sep_token + " " + text
-        # full_text = full_text.replace("\n", "|")
-        # full_text = re.sub('<[^<]+?>', '', full_text)
+        full_text = pt + self.tokenizer.sep_token + \
+            pq + self.tokenizer.sep_token + ptext + \
+                self.tokenizer.sep_token +  text
+
 
         inputs = self.tokenizer.encode_plus(
             full_text,

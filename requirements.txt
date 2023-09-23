@@ -16,7 +16,7 @@ spacy
 nltk
 lightgbm==4.1.0
 # textstat
-# autocorrect==2.6.1
-autocorrect==1.1.0
+autocorrect==2.6.1
+# autocorrect==1.1.0
 pyspellchecker==0.7.2
 optuna

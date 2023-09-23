@@ -30,6 +30,7 @@ parameters:
     max_len: 32
     max_len_char_title: 100
     max_len_char_question: 300
+    max_len_char_prompt_text: 100
     num_epoch: 5
     T_max: 500
     scheduler: "CosineAnnealingLR"
@@ -55,6 +56,7 @@ parameters:
     max_len: 32
     max_len_char_title: 100
     max_len_char_question: 300
+    max_len_char_prompt_text: 100
     pooling: "GemText"
     load_model_dir: ""
     output_dir: ""
