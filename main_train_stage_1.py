@@ -220,9 +220,14 @@ def train_main(config):
             'prompt_title',
             'title',
             'grade')
-    # train = prompts_train.merge(summary_train, on="prompt_id")
-    preprocessor = Preprocessor()
-    train = preprocessor.run(prompts_train, summary_train, mode="train")
+   
+    if cfg.debug:
+        train = prompts_train.merge(summary_train, on="prompt_id")
+        print(cfg.train_stage_1.full_text)
+        train["fixed_summary_text"] = train["text"]
+    else:
+        preprocessor = Preprocessor()
+        train = preprocessor.run(prompts_train, summary_train, mode="train")
     print(train[['prompt_title', 'prompt_question', 'text', 'fixed_summary_text']])
     if cfg.preprocess_text:
         LOGGER.info("Performing preprocess text")

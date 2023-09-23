@@ -31,6 +31,7 @@ parameters:
     max_len_char_title: 100
     max_len_char_question: 300
     max_len_char_prompt_text: 100
+    full_text: "title,question,prompt-text,text"
     num_epoch: 5
     T_max: 500
     scheduler: "CosineAnnealingLR"
@@ -57,6 +58,7 @@ parameters:
     max_len_char_title: 100
     max_len_char_question: 300
     max_len_char_prompt_text: 100
+    full_text: "title,question,prompt-text,text"
     pooling: "GemText"
     load_model_dir: ""
     output_dir: ""
