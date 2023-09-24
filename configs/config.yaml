@@ -21,16 +21,16 @@ parameters:
     only_model_name: "deberta-v3-{select}"
     output_model_dir: "./"
     output_model_name: "deberta-v3-{select}_Fold_{fold}.pth"
-    tokenizer: None
+    tokenizer: null
     accum_iter: 16
     fold: 4
     split: 5
     seed: 42
     batch_size: 2
     max_len: 32
-    max_len_char_title: 100
-    max_len_char_question: 300
-    max_len_char_prompt_text: 100
+    max_len_char_title: null
+    max_len_char_question: null
+    max_len_char_prompt_text: null
     full_text: "title,question,prompt-text,text"
     num_epoch: 5
     T_max: 500
@@ -56,9 +56,9 @@ parameters:
     batch_size: 32
     freezing: False
     max_len: 32
-    max_len_char_title: 100
-    max_len_char_question: 300
-    max_len_char_prompt_text: 100
+    max_len_char_title: null
+    max_len_char_question: null
+    max_len_char_prompt_text: null
     full_text: "title,question,prompt-text,text"
     pooling: "GemText"
     load_model_dir: ""
