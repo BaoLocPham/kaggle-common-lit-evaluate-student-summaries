@@ -36,11 +36,11 @@ class TrainDataset(Dataset):
             if t == "title":
                 full_text += pt
             elif t == "question":
-                full_text += self.tokenizer.sep_token + pq
+                full_text += " " + self.tokenizer.sep_token + pq
             elif t == "prompt-text":
-                full_text += self.tokenizer.sep_token + ptext
+                full_text += " " + self.tokenizer.sep_token + ptext
             elif t == "text":
-                full_text += self.tokenizer.sep_token + text
+                full_text += " " + self.tokenizer.sep_token + text
         # print(f"full_text: {full_text}")
         # full_text = f"{self.tokenizer.sep_token}".join(full_text)
 
