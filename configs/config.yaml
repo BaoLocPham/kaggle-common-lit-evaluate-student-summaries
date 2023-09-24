@@ -34,6 +34,7 @@ parameters:
     full_text: "title,question,prompt-text,text"
     num_epoch: 5
     T_max: 500
+    loss: ""
     scheduler: "CosineAnnealingLR"
     min_lr: 1e-6
     freezing: False

@@ -277,8 +277,13 @@ def train_main(config):
         #     num_warmup_steps=len(train_loader)*0.1*cfg.train_stage_1.num_epoch,
         #     num_training_steps=len(train_loader)*cfg.train_stage_1.num_epoch
         # )
-
-        criterion = MCRMSELoss()
+        if cfg.train_stage_1.loss=="mcrmse":
+            LOGGER.info("Using MCRMSELoss")
+            criterion = MCRMSELoss()
+        else:
+            LOGGER.info("Using SmoothL1Loss")
+            criterion = nn.SmoothL1Loss(reduction='mean')
+        
 
         start = time.time()
         best_epoch_score = np.inf
