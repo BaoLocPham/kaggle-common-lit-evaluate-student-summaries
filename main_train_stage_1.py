@@ -19,28 +19,21 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TrainDataset, read_data, slit_folds
+from dataset import (collate, TrainDataset, read_data,
+                     read_prompt_grade,
+                     preprocess_and_join,
+                     slit_folds, preprocess_text, Preprocessor)
 from models import CommontLitModel
+from utils import get_logger, seed_everything
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 warnings.filterwarnings("ignore")
 
+LOGGER = get_logger(filename="train_stage_1")
+seed_everything(seed=2102001)
 
-def get_logger(filename='Training'):
-    from logging import getLogger, INFO, StreamHandler, FileHandler, Formatter
-    logger = getLogger(__name__)
-    logger.setLevel(INFO)
-    handler1 = StreamHandler()
-    handler1.setFormatter(Formatter("%(message)s"))
-    handler2 = FileHandler(filename=f"{filename}.log")
-    handler2.setFormatter(Formatter("%(message)s"))
-    logger.addHandler(handler1)
-    logger.addHandler(handler2)
-    return logger
-
-
-LOGGER = get_logger()
 # =========================================================================================
 # Configurations
 # =========================================================================================
@@ -59,12 +52,20 @@ def init_experiment(config):
         config, resolve=True, throw_on_missing=True
     )
     # print(configs)
-    wandb.login(key=os.environ['WANDB']) 
     LOGGER.info(configs)
-    configs = configs['parameters']
-    configs['model']['model_name'] = configs['model']['model_name'].format(select=configs['model']['select'])
-    configs['model']['only_model_name'] = configs['model']['only_model_name'].format(select=configs['model']['select'])
-    run = wandb.init(entity=config.wandb.entity, project=config.wandb.project, config=configs)
+    debug = configs['parameters']['debug']
+    configs = configs['parameters']['train_stage_1']
+    configs['model_name'] = configs['model_name'].format(
+        select=configs['select'])
+    configs['only_model_name'] = configs['only_model_name'].format(
+        select=configs['select'])
+    if not debug:
+        wandb.login(key=os.environ['WANDB'])
+        run = wandb.init(
+            entity=config.wandb.entity,
+            project=config.wandb.project,
+            group='training_stage_1',
+            config=configs)
     return wandb
 
 def train_run(model, criterion, optimizer, dataloader):
@@ -86,10 +87,10 @@ def train_run(model, criterion, optimizer, dataloader):
         loss = criterion(outputs, targets)
 
         # normalize loss to account for batch accumulation
-        loss = loss / cfg.model.accum_iter
+        loss = loss / cfg.train_stage_1.accum_iter
         loss.backward()
 
-        if ((batch_idx + 1) % cfg.model.accum_iter ==
+        if ((batch_idx + 1) % cfg.train_stage_1.accum_iter ==
                 0) or (batch_idx + 1 == len(dataloader)):
             optimizer.step()
             optimizer.zero_grad()
@@ -149,13 +150,13 @@ def prepare_fold(train, cfg, fold=5):
 
     train_loader = DataLoader(
         train_dataset,
-        batch_size=cfg.model.batch_size,
+        batch_size=cfg.train_stage_1.batch_size,
         num_workers=2,
         shuffle=True,
         pin_memory=True)
     valid_loader = DataLoader(
         valid_dataset,
-        batch_size=cfg.model.batch_size,
+        batch_size=cfg.train_stage_1.batch_size,
         num_workers=2,
         shuffle=True,
         pin_memory=True)
@@ -193,14 +194,34 @@ def train_main(config):
     cfg.__dict__.update(config.parameters)
     prompts_train, prompts_test, summary_train, summary_test, submissions = read_data(
         data_dir=cfg.root_data_dir)
-    train = prompts_train.merge(summary_train, on="prompt_id")
+    if cfg.grade_data_dir != "":
+        LOGGER.info("Merging with prompt_grade")
+        prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+        prompts_train = preprocess_and_join(
+            prompts_train,
+            prompt_grade,
+            'prompt_title',
+            'title',
+            'grade')
+   
+    if cfg.debug:
+        train = prompts_train.merge(summary_train, on="prompt_id")
+        print(cfg.train_stage_1.full_text)
+        train["fixed_summary_text"] = train["text"]
+    elif cfg.preprocess_text:
+        preprocessor = Preprocessor()
+        train = preprocessor.run(prompts_train, summary_train, mode="train")
+    else:
+        train = prompts_train.merge(summary_train, on="prompt_id")
+        print(cfg.train_stage_1.full_text)
+        train["fixed_summary_text"] = train["text"]
     train = slit_folds(train, n_fold=cfg.n_fold, seed=42)
-    cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
-    cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
-    tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name)
+    cfg.train_stage_1.model_name = cfg.train_stage_1.model_name.format(select=cfg.train_stage_1.select)
+    cfg.train_stage_1.only_model_name = cfg.train_stage_1.only_model_name.format(select=cfg.train_stage_1.select)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.train_stage_1.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    cfg.model.betas = (0.9, 0.999)
+    cfg.train_stage_1.betas = (0.9, 0.999)
     oof_dfs = []
     for fold in range(cfg.n_fold):
         LOGGER.info('\n')
@@ -209,25 +230,25 @@ def train_main(config):
             train=train, cfg=cfg, fold=fold)
         LOGGER.info(
             f'Number of batches in Train {len(train_loader) } and valid {len(valid_loader)} dataset')
-        model = CommontLitModel(cfg.model.model_name, cfg=cfg.model).to(cfg.device)
+        model = CommontLitModel(cfg.train_stage_1.model_name, cfg=cfg.train_stage_1).to(cfg.device)
         optimizer_parameters = get_optimizer_params(
             model,
-            encoder_lr=cfg.model.encoder_lr,
-            decoder_lr=cfg.model.decoder_lr,
-            weight_decay=cfg.model.weight_decay)
+            encoder_lr=cfg.train_stage_1.encoder_lr,
+            decoder_lr=cfg.train_stage_1.decoder_lr,
+            weight_decay=cfg.train_stage_1.weight_decay)
         optimizer = AdamW(
             optimizer_parameters,
-            lr=cfg.model.encoder_lr,
-            eps=cfg.model.eps,
-            betas=cfg.model.betas)
+            lr=cfg.train_stage_1.encoder_lr,
+            eps=cfg.train_stage_1.eps,
+            betas=cfg.train_stage_1.betas)
         scheduler = lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=cfg.model.T_max, eta_min=cfg.model.min_lr)
+            optimizer, T_max=cfg.train_stage_1.T_max, eta_min=cfg.train_stage_1.min_lr)
 
         criterion = nn.SmoothL1Loss(reduction='mean')
 
         start = time.time()
         best_epoch_score = np.inf
-        for epoch in range(cfg.model.num_epoch):
+        for epoch in range(cfg.train_stage_1.num_epoch):
 
             train_loss = train_run(
                 model, criterion, optimizer, dataloader=train_loader)
@@ -244,7 +265,7 @@ def train_main(config):
                     model.state_dict(),
                     os.path.join(
                         cfg.save_model_dir,
-                        f"{cfg.model.only_model_name}_Fold_{fold}.pth"))
+                        f"{cfg.train_stage_1.only_model_name}_Fold_{fold}.pth"))
 
                 # saving oof values
                 df_ = oof_df(fold, valid_labels, valid_preds)
@@ -254,11 +275,12 @@ def train_main(config):
 
             LOGGER.info(
                 f"Epoch {epoch} Training Loss {np.round(train_loss , 4)} Validation Loss {np.round(valid_loss , 4)}")
-            wandb.log({
-                f"Fold {fold} training loss" : np.round(train_loss , 4),
-                f"Fold {fold} validation loss" : np.round(valid_loss , 4),
-                f"Fold {fold} epoch" : epoch
-            })
+            if not cfg.debug:
+                wandb.log({
+                    f"Fold {fold} training loss" : np.round(train_loss , 4),
+                    f"Fold {fold} validation loss" : np.round(valid_loss , 4),
+                    f"Fold {fold} epoch" : epoch
+                })
         end = time.time()
         time_elapsed = end - start
 
@@ -275,26 +297,29 @@ def train_main(config):
         LOGGER.info(
             f" oof for fold {fold} ---> {score_loss(valid_labels, valid_preds )}")
         score_loss_rs = score_loss(valid_labels, valid_preds)
-        wandb.log({
-                f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
-                f"Fold {fold} content_score" : score_loss_rs['content_score'],
-                f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
-                f"Fold {fold} epoch" : epoch
-        })
+        if not cfg.debug:
+            wandb.log({
+                    f"Fold {fold} mcrmse_score" : score_loss_rs['mcrmse_score'],
+                    f"Fold {fold} content_score" : score_loss_rs['content_score'],
+                    f"Fold {fold} wording_score" : score_loss_rs['wording_score'],
+                    f"Fold {fold} epoch" : epoch
+            })
         del model, train_loader, valid_loader, df_, valid_preds, valid_labels
         gc.collect()
         LOGGER.info('\n')
     oof_df_ = pd.concat(oof_dfs , ignore_index=True )
     average_score = score_loss(np.array(oof_df_[['content' , 'wording']]) , np.array(oof_df_[['pred_content' , 'pred_wording']]))
     LOGGER.info(average_score)
-    wandb.log({
-        f"Average mcrmse_score" : average_score['mcrmse_score'],
-        f"Average content_score" : average_score['content_score'],
-        f"Average wording_score" : average_score['wording_score'],
-    })
+    if not cfg.debug:
+        wandb.log({
+            f"Average mcrmse_score" : average_score['mcrmse_score'],
+            f"Average content_score" : average_score['content_score'],
+            f"Average wording_score" : average_score['wording_score'],
+        })
     oof_df_.to_csv(os.path.join(cfg.save_model_dir,
                                'oof_df.csv') , index = False)
 
 if __name__ == "__main__":
+    seed_everything(seed=42)
     init_experiment()
     train_main()

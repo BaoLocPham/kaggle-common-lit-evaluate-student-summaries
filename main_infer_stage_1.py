@@ -19,7 +19,10 @@ from torch.optim import lr_scheduler
 import torch.nn as nn
 from transformers import AdamW, AutoTokenizer
 from metrics import score_loss
-from dataset import collate, TestDataset, read_test
+from dataset import (collate, TestDataset, 
+                     read_prompt_grade, preprocess_and_join, 
+                     read_data, read_test, 
+                     preprocess_text, Preprocessor)
 from models import CommontLitModel
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -126,18 +129,46 @@ def infer_main(config):
     #     select=cfg.model.select)
     # cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
     # cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
-    tokenizer = AutoTokenizer.from_pretrained(cfg.inference.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.inference_stage_1.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    prompts_test, summary_test, submission = read_test(
-        data_dir=cfg.root_data_dir)
-    test = prompts_test.merge(summary_test, on="prompt_id")
+    if cfg.inference_stage_1.have_next_stage:
+        LOGGER.info("Load training data to inference stage 1")
+        # prompts_train, _, summary_train, _, _ = read_data(
+        # data_dir=cfg.root_data_dir)
+        # test = prompts_train.merge(summary_train, on="prompt_id")
+        # targets = ["content","wording"]
+        # test.drop(columns=targets, inplace=True)
+        prompts_test, summary_test, submission = read_test(
+            data_dir=cfg.root_data_dir)
+        # test = prompts_test.merge(summary_test, on="prompt_id")
+    else:
+        prompts_test, summary_test, submission = read_test(
+            data_dir=cfg.root_data_dir)
+        # test = prompts_test.merge(summary_test, on="prompt_id")
+    if cfg.grade_data_dir != "":
+        LOGGER.info("Merging with prompt_grade")
+        prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+        prompts_test = preprocess_and_join(
+            prompts_test,
+            prompt_grade,
+            'prompt_title',
+            'title',
+            'grade')
+    if cfg.debug:
+        test = prompts_test.merge(summary_test, on="prompt_id")
+        print(cfg.inference_stage_1.full_text)
+        test["fixed_summary_text"] = test["text"]
+    else:
+        preprocessor = Preprocessor()
+        test = preprocessor.run(prompts_test, summary_test, mode="test")
+    print(test[['prompt_title', 'prompt_question', 'text', 'fixed_summary_text']])
 
     test_dataset = TestDataset(test, cfg=cfg)
     test_loader = DataLoader(
         test_dataset,
-        batch_size=cfg.inference.batch_size,
+        batch_size=cfg.inference_stage_1.batch_size,
         num_workers=2,
         shuffle=False,
         pin_memory=True)
@@ -145,11 +176,11 @@ def infer_main(config):
     for fold in range(cfg.n_fold):
         print('******** fold', fold, '********')
 
-        model = CommontLitModel(model_name=cfg.inference.model_name, cfg=cfg.inference).to(cfg.device)
+        model = CommontLitModel(model_name=cfg.inference_stage_1.model_name, cfg=cfg.inference_stage_1).to(cfg.device)
         model.load_state_dict(torch.load(
             os.path.join(
-                cfg.inference.load_model_dir,
-                f"{cfg.inference.only_model_name}_Fold_{fold}.pth"
+                cfg.inference_stage_1.load_model_dir,
+                f"{cfg.inference_stage_1.only_model_name}_Fold_{fold}.pth"
             ),
             map_location=torch.device('cpu')))
         preds = test_run(model, test_loader)
@@ -161,13 +192,28 @@ def infer_main(config):
     final_preds_ = np.mean(final_preds, axis=0)
     target_cols = ['content', 'wording']
     test[target_cols] = final_preds_
-    submission = submission.drop(columns=target_cols).merge(
-        test[['student_id'] + target_cols], on='student_id', how='left')
-    print(submission.head())
-    submission[['student_id'] + target_cols].to_csv(
-        os.path.join(
-            cfg.inference.output_dir, 'submission.csv'
-        ), index=False)
+    if cfg.inference_stage_1.have_next_stage:
+        # submission = submission.drop(columns=target_cols).merge(
+        #     test, on='student_id', how='left')
+        # print(submission.head())
+        test.rename(columns={'content': 'stage_1_content',
+                             'wording': 'stage_1_wording'
+                             }, inplace=True)
+        print(test.head())
+        print(test.columns)
+        test.to_csv(
+            os.path.join(
+                cfg.inference_stage_1.output_dir,
+                cfg.inference_stage_1.output_file),
+            index=False)
+    else:
+        submission = submission.drop(columns=target_cols).merge(
+            test[['student_id'] + target_cols], on='student_id', how='left')
+        print(submission.head())
+        submission[['student_id'] + target_cols].to_csv(
+            os.path.join(
+                cfg.inference_stage_1.output_dir, 'submission.csv'
+            ), index=False)
 
 
 if __name__ == "__main__":

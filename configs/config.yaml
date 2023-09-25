@@ -9,12 +9,18 @@ wandb:
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"
-  n_fold: 5
+  grade_data_dir: "./data"
+  n_fold: 4
   save_model_dir: "./outputs"
-  model:
+  preprocess_text: False
+  debug: False
+
+  train_stage_1:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
+    output_model_dir: "./"
+    output_model_name: "deberta-v3-{select}_Fold_{fold}.pth"
     tokenizer: None
     accum_iter: 16
     fold: 4
@@ -22,11 +28,17 @@ parameters:
     seed: 42
     batch_size: 2
     max_len: 32
+    max_len_char_title: null
+    max_len_char_question: null
+    max_len_char_prompt_text: null
+    full_text: "title,question,prompt-text,text"
     num_epoch: 5
     T_max: 500
     scheduler: "CosineAnnealingLR"
     min_lr: 1e-6
     freezing: False
+    n_layers_freezing: 0
+    strategy: "GroupKFold"
     pooling: "GemText"
     weight_decay: 1e-2
     encoder_lr: 1e-5
@@ -34,14 +46,21 @@ parameters:
     eps: 1e-6
     betas: (0.9, 0.999)
 
-  inference:
+  inference_stage_1:
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
-    fold: 4
+    n_fold: 4
+    fold_to_inference: 0
     batch_size: 32
     freezing: False
     max_len: 32
+    max_len_char_title: null
+    max_len_char_question: null
+    max_len_char_prompt_text: null
+    full_text: "title,question,prompt-text,text"
     pooling: "GemText"
     load_model_dir: ""
     output_dir: ""
+    have_next_stage: False
+    output_file: "submission.csv"

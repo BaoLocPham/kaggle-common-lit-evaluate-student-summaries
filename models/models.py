@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 from transformers import AutoModel, AutoTokenizer, AdamW, DataCollatorWithPadding, AutoConfig, AutoTokenizer, logging
 from .poolings import get_pooling_layer
-from .freezing import top_half_layer_freeze
+from .freezing import top_half_layer_freeze, freezing_n_layers_before_embeddings
 
 class CommontLitModel(nn.Module):
     def __init__(self, model_name, cfg ):
@@ -24,7 +24,9 @@ class CommontLitModel(nn.Module):
         self._init_weights(self.fc)
         
         if cfg.freezing:
-            top_half_layer_freeze(self.model)
+            # freezing embedings
+            self.model.embeddings.requires_grad_(False)
+            freezing_n_layers_before_embeddings(self.model, n_layers_before_embeddings=cfg.n_layers_freezing)
         
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):

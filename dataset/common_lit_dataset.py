@@ -5,8 +5,15 @@ class TrainDataset(Dataset):
     def __init__(self, df, cfg):
         self.df = df
         self.tokenizer = cfg.tokenizer
-        self.max_len = cfg.model.max_len
+        self.max_len = cfg.train_stage_1.max_len
+        self.max_len_char_title = cfg.train_stage_1.max_len_char_title
+        self.max_len_char_question = cfg.train_stage_1.max_len_char_question
+        self.max_len_char_prompt_text = cfg.train_stage_1.max_len_char_prompt_text
+        self.full_text = cfg.train_stage_1.full_text
+        self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
+        self.ptext = df['prompt_text'].values
+        self.ftext = df['fixed_summary_text'].values
         self.text = df['text'].values
         self.targets = df[['content' , 'wording']].values
         
@@ -14,9 +21,27 @@ class TrainDataset(Dataset):
         return len(self.df)
     
     def __getitem__(self , index):
-        pq   =   self.pq[index]
-        text =   self.text[index]
-        full_text = pq+" " + self.tokenizer.sep_token +" "+text
+        pt = self.pt[index][:self.max_len_char_title]
+        pq = self.pq[index][:self.max_len_char_question]
+        ptext = self.ptext[index][:self.max_len_char_prompt_text]
+        ftext = self.ftext[index]
+        text = self.text[index]
+        # full_text = pt + self.tokenizer.sep_token + \
+        #     pq + self.tokenizer.sep_token + ptext + \
+        #         self.tokenizer.sep_token +  text
+
+        full_text = ""
+        for t in self.full_text:
+            if t == "title":
+                full_text += pt
+            elif t == "question":
+                full_text += " " + self.tokenizer.sep_token + pq
+            elif t == "prompt-text":
+                full_text += " " + self.tokenizer.sep_token + ptext
+            elif t == "fixed-summary-text":
+                full_text += " " + self.tokenizer.sep_token + ftext
+            elif t == "text":
+                full_text += " " + self.tokenizer.sep_token + text
         
         inputs = self.tokenizer.encode_plus(
                         full_text,
@@ -42,17 +67,42 @@ class TestDataset(Dataset):
     def __init__(self, df, cfg):
         self.df = df
         self.tokenizer = cfg.tokenizer
-        self.max_len = cfg.inference.max_len
+        self.max_len = cfg.train_stage_1.max_len
+        self.max_len_char_title = cfg.train_stage_1.max_len_char_title
+        self.max_len_char_question = cfg.train_stage_1.max_len_char_question
+        self.max_len_char_prompt_text = cfg.train_stage_1.max_len_char_prompt_text
+        self.full_text = cfg.train_stage_1.full_text
+        self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
+        self.ptext = df['prompt_text'].values
+        self.ftext = df['fixed_summary_text'].values
         self.text = df['text'].values
         
     def __len__(self):
         return len(self.df)
     
     def __getitem__(self , index):
-        pq   =   self.pq[index]
-        text =   self.text[index]
-        full_text = pq+" " + self.tokenizer.sep_token +" "+text
+        pt = self.pt[index][:self.max_len_char_title]
+        pq = self.pq[index][:self.max_len_char_question]
+        ptext = self.ptext[index][:self.max_len_char_prompt_text]
+        ftext = self.ftext[index]
+        text = self.text[index]
+        # full_text = pt + self.tokenizer.sep_token + \
+        #     pq + self.tokenizer.sep_token + ptext + \
+        #         self.tokenizer.sep_token +  text
+
+        full_text = ""
+        for t in self.full_text:
+            if t == "title":
+                full_text += pt
+            elif t == "question":
+                full_text += " " + self.tokenizer.sep_token + pq
+            elif t == "prompt-text":
+                full_text += " " + self.tokenizer.sep_token + ptext
+            elif t == "fixed-summary-text":
+                full_text += " " + self.tokenizer.sep_token + ftext
+            elif t == "text":
+                full_text += " " + self.tokenizer.sep_token + text
         
         inputs = self.tokenizer.encode_plus(
                         full_text,
@@ -60,7 +110,6 @@ class TestDataset(Dataset):
                         add_special_tokens=True,
                         max_length=self.max_len,
                         padding='max_length'
-                        
                     )
         
         ids = inputs['input_ids']
