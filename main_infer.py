@@ -120,12 +120,12 @@ def infer_main(config):
     config_ = OmegaConf.to_yaml(config)
     # print(config_)
     cfg.__dict__.update(config.parameters)
-    cfg.inference.model_name = cfg.model.model_name.format(
-        select=cfg.model.select)
-    cfg.inference.only_model_name = cfg.model.only_model_name.format(
-        select=cfg.model.select)
-    cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
-    cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
+    # cfg.inference.model_name = cfg.model.model_name.format(
+    #     select=cfg.model.select)
+    # cfg.inference.only_model_name = cfg.model.only_model_name.format(
+    #     select=cfg.model.select)
+    # cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
+    # cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
     tokenizer = AutoTokenizer.from_pretrained(cfg.inference.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
