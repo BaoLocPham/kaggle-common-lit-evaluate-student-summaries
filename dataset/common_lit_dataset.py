@@ -78,7 +78,7 @@ class TestDataset(Dataset):
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
         self.ptext = df['prompt_text'].values
-        self.text = df['text'].values
+        self.text = df['fixed_summary_text'].values
 
     def __len__(self):
         return len(self.df)
