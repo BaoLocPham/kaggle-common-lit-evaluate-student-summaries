@@ -205,8 +205,10 @@ def train_main(config):
             'grade')
    
     if cfg.debug:
-        train = prompts_train.merge(summary_train, on="prompt_id")
-        print(cfg.train_stage_1.full_text)
+        # train = prompts_train.merge(summary_train, on="prompt_id")
+        # print(cfg.train_stage_1.full_text)
+        preprocessor = Preprocessor()
+        train = preprocessor.run(prompts_train, summary_train, mode="train")
         train["fixed_summary_text"] = train["text"]
     elif cfg.preprocess_text:
         preprocessor = Preprocessor()
@@ -320,6 +322,6 @@ def train_main(config):
                                'oof_df.csv') , index = False)
 
 if __name__ == "__main__":
-    seed_everything(seed=42)
+    # seed_everything(seed=42)
     init_experiment()
     train_main()
