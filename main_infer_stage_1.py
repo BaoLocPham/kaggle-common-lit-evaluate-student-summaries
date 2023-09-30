@@ -131,13 +131,14 @@ def infer_main(config):
         prompts_test, summary_test, submission = read_test(
             data_dir=cfg.root_data_dir)
         # test = prompts_test.merge(summary_test, on="prompt_id")
-    prompt_grade = read_prompt_grade(cfg.grade_data_dir)
-    prompts_test = preprocess_and_join(
-        prompts_test,
-        prompt_grade,
-        'prompt_title',
-        'title',
-        'grade')
+    if cfg.grade_data_dir != "":
+        prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+        prompts_test = preprocess_and_join(
+            prompts_test,
+            prompt_grade,
+            'prompt_title',
+            'title',
+            'grade')
     preprocessor = Preprocessor()
     test = preprocessor.run(prompts_test, summary_test, mode="test")
 

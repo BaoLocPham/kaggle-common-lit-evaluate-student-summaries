@@ -41,7 +41,6 @@ python main_train_stage_1.py \
     parameters.preprocess_text=False \
     parameters.train_stage_1.select="large" \
     parameters.train_stage_1.batch_size=1 \
-    parameters.train_stage_1.fold_to_inference=0 \
     parameters.train_stage_1.max_len=1 \
     parameters.train_stage_1.encoder_lr=1e-5 \
     parameters.train_stage_1.decoder_lr=1e-5 \

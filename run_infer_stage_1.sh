@@ -30,7 +30,7 @@ python3 main_infer_stage_1.py \
     parameters.grade_data_dir="" \
     parameters.n_fold=4 \
     parameters.inference_stage_1.n_fold=1 \
-    parameters.inference_stage_1.n_fold=1 \
+    parameters.inference_stage_1.fold_to_inference=0 \
     parameters.inference_stage_1.max_len=1024 \
     parameters.inference_stage_1.model_name="/kaggle/input/common-lit-deberta-v3-large/deberta-v3-large" \
     parameters.inference_stage_1.only_model_name="deberta-v3-large" \
