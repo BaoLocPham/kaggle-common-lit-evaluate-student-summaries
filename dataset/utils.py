@@ -84,7 +84,9 @@ def preprocess_and_join(df1, df2, df1_title_col, df2_title_col, grade_col):
 def slit_folds(train: pd.DataFrame, n_fold, seed, strategy ="GroupKFold"):
     train['fold'] = -1
     if n_fold==1:
-        pass
+        train["fold"] = 0
+        return train
+
     print(f"Splitting by strategy: {strategy}")
     if strategy =="GroupKFold":
         fold = GroupKFold(n_splits=n_fold)

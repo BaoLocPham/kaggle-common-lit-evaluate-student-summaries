@@ -29,4 +29,24 @@ python main_train_stage_1.py \
     parameters.train_stage_1.scheduler="" \
     parameters.train_stage_1.freezing=True \
     parameters.train_stage_1.n_layers_freezing=4 \
-    parameters.train_stage_1.strategy="GroupKFold" 
+    parameters.train_stage_1.strategy="GroupKFold"
+
+
+python main_train_stage_1.py \
+    parameters.n_fold=4 \
+    parameters.root_data_dir="./data" \
+    parameters.grade_data_dir="" \
+    parameters.save_model_dir="./outputs" \
+    parameters.debug=True \
+    parameters.preprocess_text=False \
+    parameters.train_stage_1.select="large" \
+    parameters.train_stage_1.batch_size=1 \
+    parameters.train_stage_1.fold_to_inference=0 \
+    parameters.train_stage_1.max_len=1 \
+    parameters.train_stage_1.encoder_lr=1e-5 \
+    parameters.train_stage_1.decoder_lr=1e-5 \
+    parameters.train_stage_1.scheduler="" \
+    parameters.train_stage_1.freezing=True \
+    parameters.train_stage_1.n_layers_freezing=4 \
+    parameters.train_stage_1.output_model_dir="./outputs" \
+    parameters.train_stage_1.strategy="GroupKFold"  

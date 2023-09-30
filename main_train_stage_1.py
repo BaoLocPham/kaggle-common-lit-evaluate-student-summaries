@@ -159,10 +159,12 @@ def valid_run(model, criterion, dataloader):
 
 
 def prepare_fold(train, cfg, fold=5):
-
-    dftrain = train[train['fold'] != fold]
-    dfvalid = train[train['fold'] == fold]
-
+    if cfg.n_fold != 1:
+        dftrain = train[train['fold'] != fold]
+        dfvalid = train[train['fold'] == fold]
+    else:
+        dftrain = train[train['fold'] == fold]
+        dfvalid = train[train['fold'] == fold]
     train_dataset = TrainDataset(dftrain, cfg=cfg)
     valid_dataset = TrainDataset(dfvalid, cfg=cfg)
 
