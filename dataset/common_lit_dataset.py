@@ -57,7 +57,8 @@ class TestDataset(Dataset):
         self.max_len_char_question = cfg.train_stage_1.max_len_char_question
         self.pt = df['prompt_title'].values
         self.pq = df['prompt_question'].values
-        self.text = df['text'].values
+        self.text = df['fixed_summary_text'].values
+        # self.text = df['text'].values
 
     def __len__(self):
         return len(self.df)
