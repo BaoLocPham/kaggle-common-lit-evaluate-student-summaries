@@ -107,44 +107,41 @@ def infer_main(config):
     config_ = OmegaConf.to_yaml(config)
     cfg.__dict__.update(config.parameters)
     print(vars(cfg))
-    # cfg.inference_stage_1.model_name = cfg.model.model_name.format(
-    #     select=cfg.model.select)
-    # cfg.inference_stage_1.only_model_name = cfg.model.only_model_name.format(
-    #     select=cfg.model.select)
-    # cfg.model.model_name = cfg.model.model_name.format(select=cfg.model.select)
-    # cfg.model.only_model_name = cfg.model.only_model_name.format(select=cfg.model.select)
     tokenizer = AutoTokenizer.from_pretrained(cfg.inference_stage_1.model_name)
     cfg.tokenizer = tokenizer
     cfg.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    if cfg.inference_stage_1.have_next_stage:
-        LOGGER.info("Load training data to inference stage 1")
-        # prompts_train, _, summary_train, _, _ = read_data(
-        # data_dir=cfg.root_data_dir)
-        # test = prompts_train.merge(summary_train, on="prompt_id")
-        # targets = ["content","wording"]
-        # test.drop(columns=targets, inplace=True)
-        prompts_test, summary_test, submission = read_test(
-            data_dir=cfg.root_data_dir)
-        # test = prompts_test.merge(summary_test, on="prompt_id")
-    else:
-        prompts_test, summary_test, submission = read_test(
-            data_dir=cfg.root_data_dir)
-        # test = prompts_test.merge(summary_test, on="prompt_id")
-    if cfg.grade_data_dir != "":
-        prompt_grade = read_prompt_grade(cfg.grade_data_dir)
-        prompts_test = preprocess_and_join(
-            prompts_test,
-            prompt_grade,
-            'prompt_title',
-            'title',
-            'grade')
-    preprocessor = Preprocessor()
-    test = preprocessor.run(prompts_test, summary_test, mode="test")
+    if not cfg.inference_stage_1.is_ensemble:
+        if cfg.inference_stage_1.have_next_stage:
+            LOGGER.info("Load training data to inference stage 1")
+            prompts_test, summary_test, submission = read_test(
+                data_dir=cfg.root_data_dir)
+        else:
+            prompts_test, summary_test, submission = read_test(
+                data_dir=cfg.root_data_dir)
+        if cfg.grade_data_dir != "":
+            prompt_grade = read_prompt_grade(cfg.grade_data_dir)
+            prompts_test = preprocess_and_join(
+                prompts_test,
+                prompt_grade,
+                'prompt_title',
+                'title',
+                'grade')
+        preprocessor = Preprocessor()
+        test = preprocessor.run(prompts_test, summary_test, mode="test")
 
-    if cfg.preprocess_text:
-        LOGGER.info("Performing preprocess text")
-        test = preprocess_text(test)
+        if cfg.preprocess_text:
+            LOGGER.info("Performing preprocess text")
+            test = preprocess_text(test)
+    else:
+        LOGGER.info("Load training data to inference stage 1")
+        prompts_test, summary_test, submission = read_test(
+                data_dir=cfg.root_data_dir)
+        LOGGER.info("Load prepared ensemble")
+        test = pd.read_csv(
+            os.path.join(
+                cfg.inference_stage_1.input_prepared_dir,
+                cfg.inference_stage_1.input_prepared_file))
     print(test[['prompt_title', 'prompt_question', 'text']])
     test_dataset = TestDataset(test, cfg=cfg)
     test_dataset
@@ -200,8 +197,9 @@ def infer_main(config):
         print(submission.head())
         submission[['student_id'] + target_cols].to_csv(
             os.path.join(
-                cfg.inference_stage_1.output_dir, 'submission.csv'
+                cfg.inference_stage_1.output_dir, cfg.inference_stage_1.output_file
             ), index=False)
+
 
 if __name__ == "__main__":
     infer_main()

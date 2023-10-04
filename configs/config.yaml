@@ -43,8 +43,23 @@ parameters:
     decoder_lr: 1e-5
     eps: 1e-6
     betas: (0.9, 0.999)
+  
+  prepare_ensemble_inference_stage_1:
+    output_dir: "./"
+    output_file: "test.csv"
+  
+  ensemble_inference_stage_1:
+    input_file_dir: "./"
+    input_files: ["submission_0.csv", "submission_1.csv"]
+    input_weights: [0.5, 0.5]
+    output_dir: ""
+    output_file: "submission.csv"
+
 
   inference_stage_1:
+    is_ensemble: False
+    input_prepared_dir: "./"
+    input_prepared_file: "test.csv"
     select: "base"
     model_name: "microsoft/deberta-v3-{select}"
     only_model_name: "deberta-v3-{select}"
